@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<!-- saved from url=(0014)about:internet -->
+<html>
+    <head>
+        <!--
+          ivorn="ivo://nasa.gsfc.gcn/Fermi#Point_Dir_2018-04-30T16:46:00.00_000000-0-317"
+          role="utility" version="2.0"
+          xmlns:voe="http://www.ivoa.net/xml/VOEvent/v2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://www.ivoa.net/xml/VOEvent/v2.0  http://www.ivoa.net/xml/VOEvent/VOEvent-v2.0.xsd"
+         -->
+        <title>Target of Opportunity</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+        <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css"/>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"/>
+        <style>
+            <!--body {-->
+                <!--height: 700px;-->
+                <!--width: 500px;-->
+            <!--}-->
+
+            #accordionBox {
+                <!--height: 690px;-->
+                width: 500px;
+                <!--border-style: dotted;-->
+            }
+            .accordionDiv {
+                height: 300px;
+            }
+
+            h2 {
+                font-size: 20px;
+
+            }
+
+            .title_h {
+                padding-left: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="main_alert">
+            <h1 class="title_h">Target of Opportunity</h1>
+            <h4 class="title_h">{What_Description}</h4>
+            <h4 class="title_h">{Who_Date}</h4>
+            <h4 class="title_h">({WhereWhen_ObservationLocation_AstroCoords_Position2D_Name1}, {WhereWhen_ObservationLocation_AstroCoords_Position2D_Name2}) = ({WhereWhen_ObservationLocation_AstroCoords_Position2D_Value2_C1}, {WhereWhen_ObservationLocation_AstroCoords_Position2D_Value2_C2}) [{WhereWhen_ObservationLocation_AstroCoords_Position2D_unit}] [{WhereWhen_ObservationLocation_AstroCoords_coord_system_id}] </h4>
+            <h4 class="title_h">(ALT, AZ) = ({ALT}, {AZ})</h4>
+            <h4 class="title_h">Target up: {TargetIsUp}</h4>
+            <h4 class="title_h">Target rise time: {TargetRiseTime}</h4>
+            <h4 class="title_h">Target set time: {TargetSetTime}</h4>
+        </div>
+        {VOEvent}
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+        <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js" integrity="sha256-lSjKY0/srUM9BE3dPm+c4fBo1dky2v27Gdjm2uoZaL0=" crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+        <script>
+            $( "#accordion" ).accordion();
+        </script>
+    </body>
+</html>

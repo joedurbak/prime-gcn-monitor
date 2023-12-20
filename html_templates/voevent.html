@@ -1,0 +1,53 @@
+
+<!--voevent.html-->
+<h4 class="title_h"><a href="#" data-toggle="modal" data-target="#mainDescription"><span class="glyphicon glyphicon-info-sign">info</span></a></h4>
+<div class="modal fade" id="mainDescription" role="dialog">
+    <div class="modal-dialog">
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Info</h4>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <tr><td>Description</td><td>{Description}</td></tr>
+                    <tr><td>IVORN</td><td>{ivorn}</td></tr>
+                    <tr><td>Role</td><td>{role}</td></tr>
+                    <tr><td>Version</td><td>{version}</td></tr>
+                </table>
+                <div id="Reference">
+                    {Reference}
+                </div>
+                {Citations}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="accordion">
+    <h3>Who</h3>
+    <div id="Who" class="accordionDiv">
+        {Who}
+    </div>
+    <h3>What</h3>
+    <div id="What" class="accordionDiv">
+        {What}
+    </div>
+    <h3>Where and When</h3>
+    <div id="WhereWhen" class="accordionDiv">
+        {WhereWhen}
+    </div>
+    <h3>How</h3>
+    <div id="How" class="accordionDiv">
+        {How}
+    </div>
+    <h3>Why</h3>
+    <div id="Why" class="accordionDiv">
+        {Why}
+    </div>
+</div>
+

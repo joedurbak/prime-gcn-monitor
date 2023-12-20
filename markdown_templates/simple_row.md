@@ -1,0 +1,1 @@
+| {LeftColStr} | {RightColStr} |
