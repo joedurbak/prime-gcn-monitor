@@ -1,9 +1,9 @@
 
 [comment]: <> (observation_location.md)
 
-Observation Location
+*Observation Location*
 
-|                                                    |                     |
-|----------------------------------------------------|---------------------|
+|  |  |
+|---|---|
 | Astronomical Coordinate System |  {AstroCoordSystem} |
 {AstroCoords}

@@ -1,8 +1,8 @@
-# import gcn_custom as gcn
 import warnings
 import os
 import collections
 import pickle
+from io import StringIO
 from datetime import datetime as dt
 from datetime import timedelta as td
 
@@ -19,6 +19,7 @@ from astropy.utils.exceptions import AstropyDeprecationWarning
 warnings.filterwarnings("ignore", category=AstropyDeprecationWarning)
 from astroplan import Observer, FixedTarget, is_observable, AtNightConstraint, AirmassConstraint, moon
 from astroplan.plots import plot_sky, plot_airmass
+from pandas import read_csv
 
 from slackbot import post_gcn_alert
 import settings
@@ -32,7 +33,7 @@ html_templates_dict = settings.HTML_TEMPLATES_DICT
 
 
 def dct_loc():
-    location_name = 'Sutherland'
+    location_name = settings.LOCATION_NAME
     try:
         dct_loc_dict = pickle.load(open(settings.DCT_LOC_PICKLE, 'rb'))
     except FileNotFoundError:
@@ -51,7 +52,7 @@ def dct_loc():
 
 
 def dct_astroplan_loc():
-    location_name = 'Sutherland'
+    location_name = settings.LOCATION_NAME
     try:
         dct_loc_dict = pickle.load(open(settings.DCT_ASTROPLAN_LOC_PICKLE, 'rb'))
     except FileNotFoundError:
@@ -157,6 +158,61 @@ def airmass_horizon(airmass):
     z = np.arccos(1/airmass)
     horizon = np.pi/2 - z
     return horizon * units.rad
+
+
+def format_markdown_table(markdown_table_str):
+    # print(markdown_table_str)
+    df = read_csv(StringIO(markdown_table_str), delimiter='|')
+    df.dropna(axis=1, how='all')
+    df2 = df[df.columns[1:-1]]
+    df3 = df2.iloc[1:]
+    df_str = str(df3.to_markdown(index=False))
+    # df_str = str(df3.to_string(line_width=80, index=False))
+    return_table_str = '```\n' + df_str + '\n```\n'
+    # print(return_table_str)
+    return return_table_str
+
+
+def markdown_to_slack_post(markdown):
+    markdown_lines = StringIO(markdown).readlines()
+    # removing comments
+    no_comment_lines = [l for l in markdown_lines if not l.startswith('[comment]: <>')]
+
+    # removing multiple blank lines
+    output_lines = []
+    previous_blank = False
+    for l in no_comment_lines:
+        blank_line = l.strip() == ''
+        if not previous_blank or not blank_line:
+            output_lines.append(l)
+        if blank_line:
+            previous_blank = True
+        else:
+            previous_blank = False
+    output_message = ''.join(output_lines)
+    table_str = ''
+    previous_pipe = False
+    for l in output_lines:
+        start_pipe = l.startswith('|')
+        if not start_pipe and previous_pipe:
+            new_table = format_markdown_table(table_str)
+            output_message = output_message.replace(table_str, new_table)
+            table_str = ''
+            previous_pipe = False
+        if start_pipe:
+            table_str += l
+            previous_pipe = True
+    return output_message
+
+
+def markdown_file_to_slack_post_file(markdown_file):
+    output_f = markdown_file.replace('.md', '.slack.md')
+    with open(markdown_file) as _f:
+        markdown = _f.read()
+    slack_post = markdown_to_slack_post(markdown)
+    with open(output_f, 'w') as _f:
+        _f.write(slack_post)
+    return output_f
 
 
 def plot_targets(target, obstime, file_prefix, observer):
@@ -767,6 +823,7 @@ class GCNProcessor:
         split_path = os.path.split(incoming_xml_loc)
         if settings.MARKDOWN:
             suffix = '.md'
+            html_string = markdown_to_slack_post(html_string)
         else:
             suffix = '.html'
         file = split_path[len(split_path)-1].replace('.xml', suffix)
@@ -797,13 +854,14 @@ def handler(payload, root):
         xml, archived_xml_dir, output_html_dir, template_html_dir, html_templates_dict, root
     )
     gcn_handler.gcn_processor()
-    if gcn_handler.target_visibility.target_is_observable:
-    # if True:
-        airmass_plot, sky_plot = plot_targets(
-            gcn_handler.target_visibility.coord, gcn_handler.target_visibility.time_now,
-            gcn_handler.html_save_location, gcn_handler.target_visibility.dct
-        )
-        post_gcn_alert(gcn_handler.html_save_location, gcn_handler.target_visibility.coord, (airmass_plot, sky_plot))
+    if gcn_handler.target_visibility is not None:
+        if gcn_handler.target_visibility.target_is_observable:
+            # if True:
+                airmass_plot, sky_plot = plot_targets(
+                    gcn_handler.target_visibility.coord, gcn_handler.target_visibility.time_now,
+                    gcn_handler.html_save_location, gcn_handler.target_visibility.dct
+                )
+                post_gcn_alert(gcn_handler.html_save_location, gcn_handler.target_visibility.coord, (airmass_plot, sky_plot))
 
 
 def test_processor(xml_file):

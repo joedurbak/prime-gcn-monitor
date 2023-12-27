@@ -1,5 +1,7 @@
-import gcn
 import os
+
+import gcn
+from pandas import DataFrame
 
 AIRMASS_LIMIT = 2.5
 MARKDOWN = True
@@ -8,6 +10,7 @@ DCT_ASTROPLAN_LOC_PICKLE = 'salt_astroplan_loc.pickle'
 ARCHIVED_XML_DIR = "processed_xml"
 OUTPUT_HTML_DIR = "output_html"
 TEMPLATE_HTML_DIR = "html_templates"
+LOCATION_NAME = "Sutherland"
 
 HTML_TEMPLATES_DICT = {
     'astro_coords_html': 'astro_coords.html',
@@ -59,49 +62,7 @@ for directory in [ARCHIVED_XML_DIR, OUTPUT_HTML_DIR]:
     if not os.path.isdir(directory):
         os.makedirs(directory)
 
-EXCLUDED_NOTICE_TYPES = (
-    # gcn.notice_types.SWIFT_TOO_FOM,
-    # gcn.notice_types.SWIFT_TOO_SC_SLEW,
-    # gcn.notice_types.SWIFT_BAT_GRB_LC,
-    # gcn.notice_types.SWIFT_BAT_SCALEDMAP,
-    # gcn.notice_types.SWIFT_FOM_OBS,
-    # gcn.notice_types.SWIFT_SC_SLEW,
-    # gcn.notice_types.SWIFT_XRT_POSITION,
-    # gcn.notice_types.SWIFT_XRT_SPECTRUM,
-    # gcn.notice_types.SWIFT_XRT_IMAGE,
-    # gcn.notice_types.SWIFT_XRT_LC,
-    # gcn.notice_types.SWIFT_XRT_CENTROID,
-    # gcn.notice_types.SWIFT_UVOT_DBURST,
-    # gcn.notice_types.SWIFT_UVOT_FCHART,
-    # gcn.notice_types.SWIFT_BAT_GRB_LC_PROC,
-    # gcn.notice_types.SWIFT_XRT_SPECTRUM_PROC,
-    # gcn.notice_types.SWIFT_XRT_IMAGE_PROC,
-    # gcn.notice_types.SWIFT_UVOT_DBURST_PROC,
-    # gcn.notice_types.SWIFT_UVOT_FCHART_PROC,
-    # gcn.notice_types.SWIFT_UVOT_POS,
-    # gcn.notice_types.SWIFT_BAT_GRB_POS_TEST,
-    # gcn.notice_types.SWIFT_POINTDIR,
-    # gcn.notice_types.SWIFT_BAT_TRANS,
-    # gcn.notice_types.SWIFT_XRT_THRESHPIX,
-    # gcn.notice_types.SWIFT_XRT_THRESHPIX_PROC,
-    # gcn.notice_types.SWIFT_XRT_SPER,
-    # gcn.notice_types.SWIFT_XRT_SPER_PROC,
-    # gcn.notice_types.SWIFT_UVOT_POS_NACK,
-    # gcn.notice_types.SWIFT_BAT_ALARM_SHORT,
-    # gcn.notice_types.SWIFT_BAT_ALARM_LONG,
-    # gcn.notice_types.SWIFT_UVOT_EMERGENCY,
-    # gcn.notice_types.SWIFT_XRT_EMERGENCY,
-    # gcn.notice_types.SWIFT_FOM_PPT_ARG_ERR,
-    # gcn.notice_types.SWIFT_FOM_SAFE_POINT,
-    # gcn.notice_types.SWIFT_FOM_SLEW_ABORT,
-    # gcn.notice_types.SWIFT_BAT_QL_POS,
-    # gcn.notice_types.SWIFT_BAT_SUB_THRESHOLD,
-    # gcn.notice_types.SWIFT_BAT_SLEW_POS,
-    # gcn.notice_types.SWIFT_BAT_GRB_ALERT,
-    # gcn.notice_types.SWIFT_ACTUAL_POINTDIR,
-    # gcn.notice_types.SWIFT_BAT_MONITOR,
-    # gcn.notice_types.SWIFT_BAT_SUBSUB,
-    # gcn.notice_types.SWIFT_BAT_KNOWN_SRC,
+INCLUDE_ALERT_MESSAGES = (
     gcn.notice_types.GRB_COORDS,
     gcn.notice_types.TEST_COORDS,
     gcn.notice_types.IM_ALIVE,
@@ -131,6 +92,8 @@ EXCLUDED_NOTICE_TYPES = (
     gcn.notice_types.HETE_GNDANA_SRC,
     gcn.notice_types.HETE_TEST,
     gcn.notice_types.GRB_CNTRPART,
+    gcn.notice_types.SWIFT_TOO_FOM,
+    gcn.notice_types.SWIFT_TOO_SC_SLEW,
     gcn.notice_types.DOW_TOD,
     gcn.notice_types.spare50,
     gcn.notice_types.INTEGRAL_POINTDIR,
@@ -142,11 +105,49 @@ EXCLUDED_NOTICE_TYPES = (
     gcn.notice_types.AAVSO,
     gcn.notice_types.MILAGRO_POS,
     gcn.notice_types.KONUS_LC,
+    gcn.notice_types.SWIFT_BAT_GRB_ALERT,
     gcn.notice_types.SWIFT_BAT_GRB_POS_ACK,
     gcn.notice_types.SWIFT_BAT_GRB_POS_NACK,
+    gcn.notice_types.SWIFT_BAT_GRB_LC,
+    gcn.notice_types.SWIFT_BAT_SCALEDMAP,
+    gcn.notice_types.SWIFT_FOM_OBS,
+    gcn.notice_types.SWIFT_SC_SLEW,
+    gcn.notice_types.SWIFT_XRT_POSITION,
+    gcn.notice_types.SWIFT_XRT_SPECTRUM,
+    gcn.notice_types.SWIFT_XRT_IMAGE,
+    gcn.notice_types.SWIFT_XRT_LC,
+    gcn.notice_types.SWIFT_XRT_CENTROID,
+    gcn.notice_types.SWIFT_UVOT_DBURST,
+    gcn.notice_types.SWIFT_UVOT_FCHART,
+    gcn.notice_types.SWIFT_BAT_GRB_LC_PROC,
+    gcn.notice_types.SWIFT_XRT_SPECTRUM_PROC,
+    gcn.notice_types.SWIFT_XRT_IMAGE_PROC,
+    gcn.notice_types.SWIFT_UVOT_DBURST_PROC,
+    gcn.notice_types.SWIFT_UVOT_FCHART_PROC,
+    gcn.notice_types.SWIFT_UVOT_POS,
+    gcn.notice_types.SWIFT_BAT_GRB_POS_TEST,
+    gcn.notice_types.SWIFT_POINTDIR,
+    gcn.notice_types.SWIFT_BAT_TRANS,
+    gcn.notice_types.SWIFT_XRT_THRESHPIX,
+    gcn.notice_types.SWIFT_XRT_THRESHPIX_PROC,
+    gcn.notice_types.SWIFT_XRT_SPER,
+    gcn.notice_types.SWIFT_XRT_SPER_PROC,
+    gcn.notice_types.SWIFT_UVOT_POS_NACK,
+    gcn.notice_types.SWIFT_BAT_ALARM_SHORT,
+    gcn.notice_types.SWIFT_BAT_ALARM_LONG,
+    gcn.notice_types.SWIFT_UVOT_EMERGENCY,
+    gcn.notice_types.SWIFT_XRT_EMERGENCY,
+    gcn.notice_types.SWIFT_FOM_PPT_ARG_ERR,
+    gcn.notice_types.SWIFT_FOM_SAFE_POINT,
+    gcn.notice_types.SWIFT_FOM_SLEW_ABORT,
+    gcn.notice_types.SWIFT_BAT_QL_POS,
+    gcn.notice_types.SWIFT_BAT_SUB_THRESHOLD,
+    gcn.notice_types.SWIFT_BAT_SLEW_POS,
     gcn.notice_types.AGILE_GRB_WAKEUP,
     gcn.notice_types.AGILE_GRB_GROUND,
     gcn.notice_types.AGILE_GRB_REFINED,
+    gcn.notice_types.SWIFT_ACTUAL_POINTDIR,
+    gcn.notice_types.AGILE_MCAL_ALERT,
     gcn.notice_types.AGILE_POINTDIR,
     gcn.notice_types.AGILE_TRANS,
     gcn.notice_types.AGILE_GRB_POS_TEST,
@@ -172,12 +173,15 @@ EXCLUDED_NOTICE_TYPES = (
     gcn.notice_types.FERMI_POINTDIR,
     gcn.notice_types.SIMBADNED,
     gcn.notice_types.FERMI_GBM_SUBTHRESH,
+    gcn.notice_types.SWIFT_BAT_MONITOR,
     gcn.notice_types.MAXI_UNKNOWN,
     gcn.notice_types.MAXI_KNOWN,
     gcn.notice_types.MAXI_TEST,
     gcn.notice_types.OGLE,
     gcn.notice_types.CBAT,
     gcn.notice_types.MOA,
+    gcn.notice_types.SWIFT_BAT_SUBSUB,
+    gcn.notice_types.SWIFT_BAT_KNOWN_SRC,
     gcn.notice_types.VOE_11_IM_ALIVE,
     gcn.notice_types.VOE_20_IM_ALIVE,
     gcn.notice_types.FERMI_SC_SLEW_INTERNAL,
@@ -194,72 +198,51 @@ EXCLUDED_NOTICE_TYPES = (
     gcn.notice_types.AMON_ICECUBE_HESE,
     gcn.notice_types.CALET_GBM_FLT_LC,
     gcn.notice_types.CALET_GBM_GND_LC,
+    gcn.notice_types.LVC_EARLY_WARNING,
+    gcn.notice_types.LVC_RETRACTION,
+    gcn.notice_types.GWHEN_COINC,
     gcn.notice_types.AMON_ICECUBE_EHE,
-    # gcn.notice_types.AMON_TEST_EVENT,
+    gcn.notice_types.HAWC_BURST_MONITOR,
+    gcn.notice_types.AMON_NU_EM_COINC,
+    gcn.notice_types.ICECUBE_ASTROTRACK_GOLD,
+    gcn.notice_types.ICECUBE_ASTROTRACK_BRONZE,
+    gcn.notice_types.SK_SN,
+    gcn.notice_types.ICECUBE_CASCADE,
+    gcn.notice_types.GECAM_FLT,
+    gcn.notice_types.GECAM_GND
 )
 
-INCLUDE_ALERT_MESSAGES = (
-    gcn.notice_types.SWIFT_POINTDIR,
-    gcn.notice_types.SWIFT_ACTUAL_POINTDIR,
-    gcn.notice_types.SWIFT_SC_SLEW,
-    gcn.notice_types.SWIFT_TOO_SC_SLEW,
-    gcn.notice_types.SWIFT_TOO_FOM,
-    gcn.notice_types.SWIFT_BAT_ALARM_LONG,
-    gcn.notice_types.SWIFT_BAT_ALARM_SHORT,
-    gcn.notice_types.SWIFT_BAT_GRB_ALERT,
-    gcn.notice_types.SWIFT_BAT_GRB_LC,
-    gcn.notice_types.SWIFT_BAT_GRB_LC_PROC,
-    gcn.notice_types.SWIFT_BAT_GRB_POS_TEST,
-    gcn.notice_types.SWIFT_BAT_KNOWN_SRC,
-    gcn.notice_types.SWIFT_BAT_MONITOR,
-    gcn.notice_types.SWIFT_BAT_QL_POS,
-    gcn.notice_types.SWIFT_BAT_SCALEDMAP,
-    gcn.notice_types.SWIFT_BAT_SLEW_POS,
-    gcn.notice_types.SWIFT_BAT_SUBSUB,
-    gcn.notice_types.SWIFT_BAT_SUB_THRESHOLD,
-    gcn.notice_types.SWIFT_BAT_TRANS,
-    gcn.notice_types.SWIFT_FOM_OBS,
-    gcn.notice_types.SWIFT_FOM_PPT_ARG_ERR,
-    gcn.notice_types.SWIFT_FOM_SAFE_POINT,
-    gcn.notice_types.SWIFT_FOM_SLEW_ABORT,
-    gcn.notice_types.SWIFT_UVOT_DBURST,
-    gcn.notice_types.SWIFT_UVOT_DBURST_PROC,
-    gcn.notice_types.SWIFT_UVOT_EMERGENCY,
-    gcn.notice_types.SWIFT_UVOT_FCHART,
-    gcn.notice_types.SWIFT_UVOT_FCHART_PROC,
-    gcn.notice_types.SWIFT_UVOT_POS,
-    gcn.notice_types.SWIFT_UVOT_POS_NACK,
-    gcn.notice_types.SWIFT_XRT_CENTROID,
-    gcn.notice_types.SWIFT_XRT_EMERGENCY,
-    gcn.notice_types.SWIFT_XRT_IMAGE,
-    gcn.notice_types.SWIFT_XRT_IMAGE_PROC,
-    gcn.notice_types.SWIFT_XRT_LC,
-    gcn.notice_types.SWIFT_XRT_POSITION,
-    gcn.notice_types.SWIFT_XRT_SPECTRUM,
-    gcn.notice_types.SWIFT_XRT_SPECTRUM_PROC,
-    gcn.notice_types.SWIFT_XRT_SPER,
-    gcn.notice_types.SWIFT_XRT_SPER_PROC,
-    gcn.notice_types.SWIFT_XRT_THRESHPIX,
-    gcn.notice_types.SWIFT_XRT_THRESHPIX_PROC,
-    gcn.notice_types.FERMI_GBM_ALERT,
-    gcn.notice_types.FERMI_GBM_FLT_POS,
-    gcn.notice_types.FERMI_GBM_GND_POS,
-    gcn.notice_types.FERMI_GBM_LC,
-    gcn.notice_types.FERMI_GBM_GND_INTERNAL,
-    gcn.notice_types.FERMI_GBM_FIN_POS,
-    gcn.notice_types.FERMI_GBM_ALERT_INTERNAL,
-    gcn.notice_types.FERMI_GBM_FLT_INTERNAL,
-    gcn.notice_types.FERMI_GBM_TRANS,
-    gcn.notice_types.FERMI_GBM_POS_TEST,
-    gcn.notice_types.FERMI_LAT_POS_INI,
-    gcn.notice_types.FERMI_LAT_POS_UPD,
-    gcn.notice_types.FERMI_LAT_POS_DIAG,
-    gcn.notice_types.FERMI_LAT_TRANS,
-    gcn.notice_types.FERMI_LAT_POS_TEST,
-    gcn.notice_types.FERMI_LAT_MONITOR,
-    gcn.notice_types.FERMI_SC_SLEW,
-    gcn.notice_types.FERMI_LAT_GND,
-    gcn.notice_types.FERMI_LAT_OFFLINE,
-    gcn.notice_types.FERMI_POINTDIR,
-)
+_observations = [
+    # (filter1, filter2, total_exposure_time_seconds, exposure_time_per_frame)
+    ('Open', 'J', 30*60, 20),
+    ('Open', 'H', 30*60, 10),
+    ('Open', 'Y', 30*60, 20),
+    ('Z', 'Open', 30*60, 20)
+]
 
+OBSERVATIONS = DataFrame(_observations)
+OBSERVATIONS.columns = ('filter1', 'filter2', 'total_exposure_time_seconds', 'exposure_time_per_frame')
+_total_observation_time = OBSERVATIONS.total_exposure_time_seconds.sum()
+_total_telescope_time = _total_observation_time * 2
+
+_message = 'Observation list contains the following exposures:\n\n'
+_message += '```\n' + str(OBSERVATIONS.to_markdown()) + '\n```\n'
+_message += '*Some notes*\n'
+_message += '  - To observe this target, send the observation list csv to the obs-request channel'
+_message += ' on the PRIME discord\n'
+_message += '  - Total telescope time, {} minutes, is ~2x total exposure time for all filters, {} minutes.\n'.format(
+    int(_total_telescope_time/60), int(_total_observation_time/60)
+)
+_message += '  - If desired, it is recommended to edit the exposure time by altering the DitherTotal field in the csv\n'
+_message += '  - When adding new lines to the observation list csv, the BlockID values must be unique\n'
+_message += '  - Filter1 options are Open, Z, Narrow and Dark\n'
+_message += '  - Filter2 options are Y, J, H and Open\n'
+_message += '  - If you have trouble reaching the observer, try calling the observatory: +27 231000191'
+
+SLACK = {
+    'initial_message': "GCN Alert! More info incoming\n\nObservatory weather: https://suthweather.saao.ac.za/",
+    'slack_token': os.environ['SLACKTOKEN'],
+    'slack_channel': 'C06APCA2H99',  # bot_testing
+    # 'slack_channel: '',  # gcn
+    'observation_list_message': _message
+}
