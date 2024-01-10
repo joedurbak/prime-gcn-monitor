@@ -237,6 +237,20 @@ def plot_targets(target, obstime, file_prefix, observer):
     return airmass_plot_file, sky_plot_file
 
 
+def calculate_time_observable_minutes(target_rise_time, target_set_time, night_start_time, night_end_time):
+    start_time = target_rise_time
+    end_time = target_set_time
+    if target_rise_time < night_start_time:
+        start_time = night_start_time
+    if night_end_time > target_set_time:
+        end_time = night_end_time
+    try:
+        time_observable = (end_time - start_time).datetime.total_seconds() / 60  # getting observable time in minutes
+    except AttributeError:
+        time_observable = 0
+    return time_observable
+
+
 class TargetVisibilityAtDCT:
     def __init__(self, ra, dec, unit,):
         self.airmass_horizon = airmass_horizon(settings.AIRMASS_LIMIT)
@@ -263,13 +277,16 @@ class TargetVisibilityAtDCT:
             self.time_now, self.target, which=target_set_which, horizon=self.airmass_horizon
         )
         # self.target_rise_time_local = self.target_rise_time.datetime.replace(tzinfo=timezone.utc).astimezone(tz=None)
-        self.twilight_evening = self.dct.twilight_evening_nautical(self.time_now, which=twilight_evening_which)
-        self.twilight_morning = self.dct.twilight_morning_nautical(self.time_now, which=twilight_morning_which)
+        self.twilight_evening = self.dct.twilight_evening_astronomical(self.time_now, which=twilight_evening_which)
+        self.twilight_morning = self.dct.twilight_morning_astronomical(self.time_now, which=twilight_morning_which)
         constraints = (AirmassConstraint(settings.AIRMASS_LIMIT), AtNightConstraint.twilight_astronomical())
         self.target_is_observable = is_observable(
             constraints=constraints, observer=self.dct, targets=self.target,
             time_range=(self.twilight_evening, self.twilight_morning)
         )[0]
+        self.time_observable_minutes = calculate_time_observable_minutes(
+            self.target_rise_time, self.target_set_time, self.twilight_evening, self.twilight_morning
+        )
 
 
 class HTMLOutput:
@@ -377,10 +394,15 @@ class HTMLOutput:
             context['TargetSetTime'] = self.target_visibility.target_set_time.datetime
         except Exception as e:
             context['TargetSetTime'] = str(type(e))
+        try:
+            context['TargetSetTime'] = self.target_visibility.target_set_time.datetime
+        except Exception as e:
+            context['TargetSetTime'] = str(type(e))
         context['TargetIsObservable'] = self.target_visibility.target_is_observable
         context['TwilightEvening'] = self.target_visibility.twilight_evening.datetime
         context['TwilightMorning'] = self.target_visibility.twilight_morning.datetime
         context['AirmassLimit'] = settings.AIRMASS_LIMIT
+        context['TimeObservableMinutes'] = self.target_visibility.time_observable_minutes
         return format_html(self.container_html, context)
 
     def simple_row_xml_to_html(self, left_col_str, right_col_str):
@@ -873,10 +895,13 @@ def test_processor(xml_file):
         xml, archived_xml_dir, output_html_dir, template_html_dir, html_templates_dict, xml_file
     )
     gcn_handler.gcn_processor()
-    if gcn_handler.target_visibility.target_is_observable:
+    if gcn_handler.target_visibility.target_is_observable and \
+            gcn_handler.target_visibility >= settings.OBSERVABLE_TIME_MINIMUM_MINUTES:
         post_gcn_alert(gcn_handler.html_save_location, gcn_handler.target_visibility.coord)
 
 
 if __name__ == '__main__':
-    test_file = '/Users/jdurbak/PycharmProjects/prime-gcn-monitor/processed_xml/Fermi%23Point_Dir_2023-12-19T22%3A06%3A00.00_000000-0-384_129.xml'
-    test_processor(test_file)
+    # test_file = '/Users/jdurbak/PycharmProjects/prime-gcn-monitor/processed_xml/Fermi%23Point_Dir_2023-12-19T22%3A06%3A00.00_000000-0-384_129.xml'
+    # test_processor(test_file)
+    a = TargetVisibilityAtDCT(95.7959, -48.3720, units.degree)
+    print(a.time_observable_minutes)

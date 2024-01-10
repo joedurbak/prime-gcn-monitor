@@ -11,6 +11,7 @@ ARCHIVED_XML_DIR = "processed_xml"
 OUTPUT_HTML_DIR = "output_html"
 TEMPLATE_HTML_DIR = "html_templates"
 LOCATION_NAME = "Sutherland"
+OBSERVABLE_TIME_MINIMUM_MINUTES = 15
 
 HTML_TEMPLATES_DICT = {
     'astro_coords_html': 'astro_coords.html',
