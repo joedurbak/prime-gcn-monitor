@@ -245,7 +245,7 @@ class TargetVisibilityAtDCT:
         self.time_now = Time(str(dt.utcnow()))
         self.dct = dct_astroplan_loc()
         assert isinstance(self.dct, Observer)
-        self.is_night = self.dct.is_night(self.time_now, horizon=-12*units.degree)  # horizon set to nautical twilight
+        self.is_night = self.dct.is_night(self.time_now, horizon=-18*units.degree)  # horizon set to astronomical twilight
         if self.is_night:
             twilight_evening_which, twilight_morning_which = (u'previous', u'next')
         else:
@@ -265,7 +265,7 @@ class TargetVisibilityAtDCT:
         # self.target_rise_time_local = self.target_rise_time.datetime.replace(tzinfo=timezone.utc).astimezone(tz=None)
         self.twilight_evening = self.dct.twilight_evening_nautical(self.time_now, which=twilight_evening_which)
         self.twilight_morning = self.dct.twilight_morning_nautical(self.time_now, which=twilight_morning_which)
-        constraints = (AirmassConstraint(settings.AIRMASS_LIMIT), AtNightConstraint.twilight_nautical())
+        constraints = (AirmassConstraint(settings.AIRMASS_LIMIT), AtNightConstraint.twilight_astronomical())
         self.target_is_observable = is_observable(
             constraints=constraints, observer=self.dct, targets=self.target,
             time_range=(self.twilight_evening, self.twilight_morning)

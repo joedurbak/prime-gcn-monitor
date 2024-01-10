@@ -3,7 +3,7 @@ import os
 import gcn
 from pandas import DataFrame
 
-AIRMASS_LIMIT = 2.5
+AIRMASS_LIMIT = 2.0
 MARKDOWN = True
 DCT_LOC_PICKLE = 'salt_loc.pickle'
 DCT_ASTROPLAN_LOC_PICKLE = 'salt_astroplan_loc.pickle'
@@ -181,7 +181,7 @@ INCLUDE_ALERT_MESSAGES = (
     # gcn.notice_types.CBAT,
     # gcn.notice_types.MOA,
     # gcn.notice_types.SWIFT_BAT_SUBSUB,
-    gcn.notice_types.SWIFT_BAT_KNOWN_SRC,
+    # gcn.notice_types.SWIFT_BAT_KNOWN_SRC,
     # gcn.notice_types.VOE_11_IM_ALIVE,
     # gcn.notice_types.VOE_20_IM_ALIVE,
     # gcn.notice_types.FERMI_SC_SLEW_INTERNAL,
@@ -193,7 +193,7 @@ INCLUDE_ALERT_MESSAGES = (
     # gcn.notice_types.LVC_INITIAL,
     gcn.notice_types.LVC_UPDATE,
     # gcn.notice_types.LVC_TEST,
-    gcn.notice_types.LVC_COUNTERPART,
+    # gcn.notice_types.LVC_COUNTERPART,
     # gcn.notice_types.AMON_ICECUBE_COINC,
     # gcn.notice_types.AMON_ICECUBE_HESE,
     gcn.notice_types.CALET_GBM_FLT_LC,
