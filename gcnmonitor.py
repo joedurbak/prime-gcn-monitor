@@ -287,6 +287,8 @@ class TargetVisibilityAtDCT:
         self.time_observable_minutes = calculate_time_observable_minutes(
             self.target_rise_time, self.target_set_time, self.twilight_evening, self.twilight_morning
         )
+        if self.time_observable_minutes < settings.OBSERVABLE_TIME_MINIMUM_MINUTES:
+            self.target_is_observable = False
 
 
 class HTMLOutput:
@@ -895,8 +897,7 @@ def test_processor(xml_file):
         xml, archived_xml_dir, output_html_dir, template_html_dir, html_templates_dict, xml_file
     )
     gcn_handler.gcn_processor()
-    if gcn_handler.target_visibility.target_is_observable and \
-            gcn_handler.target_visibility >= settings.OBSERVABLE_TIME_MINIMUM_MINUTES:
+    if gcn_handler.target_visibility.target_is_observable:
         post_gcn_alert(gcn_handler.html_save_location, gcn_handler.target_visibility.coord)
 
 
