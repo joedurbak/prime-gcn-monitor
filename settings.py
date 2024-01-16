@@ -243,7 +243,7 @@ _message += '  - If you have trouble reaching the observer, try calling the obse
 SLACK = {
     'initial_message': "GCN Alert! More info incoming\n\nObservatory weather: https://suthweather.saao.ac.za/",
     'slack_token': os.environ['SLACKTOKEN'],
-    'slack_channel': 'C06APCA2H99',  # bot_testing
-    # 'slack_channel: '',  # gcn
+    # 'slack_channel': 'C06APCA2H99',  # bot_testing
+    'slack_channel': 'C06A8KNSV0X',  # gcn
     'observation_list_message': _message
 }
