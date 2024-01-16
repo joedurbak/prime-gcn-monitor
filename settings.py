@@ -200,7 +200,7 @@ INCLUDE_ALERT_MESSAGES = (
     gcn.notice_types.CALET_GBM_FLT_LC,
     gcn.notice_types.CALET_GBM_GND_LC,
     # gcn.notice_types.LVC_EARLY_WARNING,
-    gcn.notice_types.LVC_RETRACTION,
+    # gcn.notice_types.LVC_RETRACTION,
     # gcn.notice_types.GWHEN_COINC,
     # gcn.notice_types.AMON_ICECUBE_EHE,
     # gcn.notice_types.HAWC_BURST_MONITOR,
