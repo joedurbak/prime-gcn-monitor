@@ -247,3 +247,5 @@ SLACK = {
     'slack_channel': 'C06A8KNSV0X',  # gcn
     'observation_list_message': _message
 }
+
+VERIFY_SSL = False

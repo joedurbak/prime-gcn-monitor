@@ -1,4 +1,5 @@
 from time import sleep
+import ssl
 
 from slack_sdk import WebClient
 from astropy.coordinates import SkyCoord
@@ -11,8 +12,13 @@ def post_gcn_alert(markdown_file, coordinates, images=tuple()):
     slack_token = settings.SLACK['slack_token']
     gcn_channel_id = settings.SLACK['slack_channel']
     message = settings.SLACK['initial_message']
-
-    client = WebClient(token=slack_token)
+    if not settings.VERIFY_SSL:
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+    else:
+        ssl_context = None
+    client = WebClient(token=slack_token, ssl=ssl_context)
     response = client.chat_postMessage(
         channel=gcn_channel_id,
         text=message
@@ -63,6 +69,6 @@ def post_gcn_alert(markdown_file, coordinates, images=tuple()):
 
 
 if __name__ == '__main__':
-    markdown_f = '/Users/jdurbak/PycharmProjects/prime-gcn-monitor/output_md/SWIFT%23Point_Dir_2023-12-20T05%3A25%3A00.00_369155702-847_83.md'
+    markdown_f = r'C:\PycharmProjects\prime-gcn-monitor\output_md\SWIFT%23BAT_Lightcurve_1209398-335_63.md'
     target_coords = SkyCoord('02h25m00.00s', " -04d30m00.0s")
     post_gcn_alert(markdown_f, SkyCoord('02h25m00.00s', " -04d30m00.0s"))
