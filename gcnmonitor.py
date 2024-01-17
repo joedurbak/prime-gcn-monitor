@@ -906,3 +906,4 @@ if __name__ == '__main__':
     # test_processor(test_file)
     a = TargetVisibilityAtDCT(95.7959, -48.3720, units.degree)
     print(a.time_observable_minutes)
+    plot_targets(a.coord, a.time_now, 'test', a.dct)
