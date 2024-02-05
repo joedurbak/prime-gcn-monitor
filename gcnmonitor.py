@@ -18,7 +18,7 @@ from astropy import units
 from astropy.utils.exceptions import AstropyDeprecationWarning
 warnings.filterwarnings("ignore", category=AstropyDeprecationWarning)
 from astroplan import Observer, FixedTarget, is_observable, AtNightConstraint, AirmassConstraint, moon
-from astroplan.plots import plot_sky, plot_airmass
+from astroplan.plots import plot_sky, plot_airmass, plot_sky_24hr, plot_finder_image
 from pandas import read_csv
 
 from slackbot import post_gcn_alert
@@ -229,7 +229,7 @@ def plot_targets(target, obstime, file_prefix, observer):
     plt.savefig(airmass_plot_file)
     plt.clf()
 
-    plot_sky(target, observer, obstime)
+    # plot_sky(target, observer, obstime)
     ax2 = plot_sky(_moon, observer, obstime)
     ax2.legend()
     plt.savefig(sky_plot_file)
