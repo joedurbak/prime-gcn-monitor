@@ -240,9 +240,9 @@ def plot_targets(target, obstime, file_prefix, observer):
 def calculate_time_observable_minutes(target_rise_time, target_set_time, night_start_time, night_end_time):
     start_time = target_rise_time
     end_time = target_set_time
-    if target_rise_time < night_start_time:
+    if target_rise_time > night_start_time:
         start_time = night_start_time
-    if night_end_time > target_set_time:
+    if target_set_time < night_end_time:
         end_time = night_end_time
     try:
         time_observable = (end_time - start_time).datetime.total_seconds() / 60  # getting observable time in minutes
