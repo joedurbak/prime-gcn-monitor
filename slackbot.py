@@ -13,6 +13,11 @@ def post_gcn_alert(markdown_file, coordinates, images=tuple()):
     slack_token = settings.SLACK['slack_token']
     gcn_channel_id = settings.SLACK['slack_channel']
     message = settings.SLACK['initial_message']
+    message += '\nInteractive airmass plot, etc. can be found here:\n'
+    message += 'https://airmass.org/chart/obsid:{}/date:{}/object:gcnobject/ra:{:.6f}/dec:{:.6f}'.format(
+        settings.AIRMASS_ORG_LOCATION, date.today().strftime('%Y-%m-%d'),
+        coordinates.fk5.ra.deg, coordinates.fk5.dec.deg
+    )
     if not settings.VERIFY_SSL:
         ssl_context = ssl.create_default_context()
         ssl_context.check_hostname = False
@@ -55,18 +60,18 @@ def post_gcn_alert(markdown_file, coordinates, images=tuple()):
             title='plot'
         )
 
-    message = 'Interactive airmass plot, etc. can be found here:\n'
-    message += 'https://airmass.org/chart/obsid:{}/date:{}/object:gcnobject/ra:{:.6f}/dec:{:.6f}'.format(
-        settings.AIRMASS_ORG_LOCATION, date.today().strftime('%Y-%m-%d'),
-        coordinates.fk5.ra.deg, coordinates.fk5.dec.deg
-    )
+    # message = 'Interactive airmass plot, etc. can be found here:\n'
+    # message += 'https://airmass.org/chart/obsid:{}/date:{}/object:gcnobject/ra:{:.6f}/dec:{:.6f}'.format(
+    #     settings.AIRMASS_ORG_LOCATION, date.today().strftime('%Y-%m-%d'),
+    #     coordinates.fk5.ra.deg, coordinates.fk5.dec.deg
+    # )
     # https://airmass.org/chart/obsid:salt/date:2024-02-06/object:gcnobject/ra:351.476375/dec:-55.132000
-    print(message)
-    next_response = client.chat_postMessage(
-        channel=gcn_channel_id,
-        text=message,
-        thread_ts=response['ts']
-    )
+    # print(message)
+    # next_response = client.chat_postMessage(
+    #     channel=gcn_channel_id,
+    #     text=message,
+    #     thread_ts=response['ts']
+    # )
     csv_file = markdown_file.replace('.md', '.csv')
     generate_observation_csv(coordinates, csv_file)
     message = settings.SLACK['observation_list_message']
