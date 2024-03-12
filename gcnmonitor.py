@@ -17,7 +17,8 @@ from astropy.coordinates import AltAz
 from astropy import units
 from astropy.utils.exceptions import AstropyDeprecationWarning
 warnings.filterwarnings("ignore", category=AstropyDeprecationWarning)
-from astroplan import Observer, FixedTarget, is_observable, AtNightConstraint, AirmassConstraint, moon
+from astroplan import Observer, FixedTarget, is_observable, AtNightConstraint, AirmassConstraint, moon,\
+    observability_table
 from astroplan.plots import plot_sky, plot_airmass, plot_sky_24hr, plot_finder_image
 from pandas import read_csv
 
@@ -237,17 +238,14 @@ def plot_targets(target, obstime, file_prefix, observer):
     return airmass_plot_file, sky_plot_file
 
 
-def calculate_time_observable_minutes(target_rise_time, target_set_time, night_start_time, night_end_time):
-    start_time = target_rise_time
-    end_time = target_set_time
-    if target_rise_time > night_start_time:
-        start_time = night_start_time
-    if target_set_time < night_end_time:
-        end_time = night_end_time
-    try:
-        time_observable = (end_time - start_time).datetime.total_seconds() / 60  # getting observable time in minutes
-    except AttributeError:
-        time_observable = 0
+def calculate_time_observable_minutes(
+        target_rise_time, target_set_time, night_start_time, night_end_time, location, coords, constraints, time_range
+):
+    ot = observability_table(
+        constraints, location, [coords], time_range=time_range, time_grid_resolution=0.05 * units.h
+    )
+    time_range_total_minutes = (time_range[1].to_datetime() - time_range[0].to_datetime()).total_seconds()/60
+    time_observable = time_range_total_minutes * ot['fraction of time observable'][0]
     return time_observable
 
 
@@ -284,8 +282,10 @@ class TargetVisibilityAtDCT:
             constraints=constraints, observer=self.dct, targets=self.target,
             time_range=(self.twilight_evening, self.twilight_morning)
         )[0]
+        print(self.target_is_observable)
         self.time_observable_minutes = calculate_time_observable_minutes(
-            self.target_rise_time, self.target_set_time, self.twilight_evening, self.twilight_morning
+            self.target_rise_time, self.target_set_time, self.twilight_evening, self.twilight_morning,
+            self.dct, self.target, constraints, (self.twilight_evening, self.twilight_morning)
         )
         if self.time_observable_minutes < settings.OBSERVABLE_TIME_MINIMUM_MINUTES:
             self.target_is_observable = False
@@ -864,6 +864,13 @@ class GCNProcessor:
         self.target_visibility = html_handler.target_visibility
 
 
+def filter_notices(gcn_handler):
+    if gcn_handler.target_visibility is not None:
+        if gcn_handler.target_visibility.target_is_observable:
+            return True
+    return False
+
+
 @gcn.include_notice_types(*notice_types)
 def handler(payload, root):
     print("{0}".format(root.attrib['ivorn']))
@@ -878,14 +885,36 @@ def handler(payload, root):
         xml, archived_xml_dir, output_html_dir, template_html_dir, html_templates_dict, root
     )
     gcn_handler.gcn_processor()
-    if gcn_handler.target_visibility is not None:
-        if gcn_handler.target_visibility.target_is_observable:
-            # if True:
-                airmass_plot, sky_plot = plot_targets(
-                    gcn_handler.target_visibility.coord, gcn_handler.target_visibility.time_now,
-                    gcn_handler.html_save_location, gcn_handler.target_visibility.dct
-                )
-                post_gcn_alert(gcn_handler.html_save_location, gcn_handler.target_visibility.coord, (airmass_plot, sky_plot))
+    if filter_notices(gcn_handler):
+        airmass_plot, sky_plot = plot_targets(
+            gcn_handler.target_visibility.coord, gcn_handler.target_visibility.time_now,
+            gcn_handler.html_save_location, gcn_handler.target_visibility.dct
+        )
+        post_gcn_alert(gcn_handler.html_save_location, gcn_handler.target_visibility.coord, (airmass_plot, sky_plot))
+
+
+class TestFind:
+    def __init__(self, string):
+        self.attrib = {'value': string}
+
+
+class TestRoot:
+    def __init__(self, filename, xml):
+        filename = os.path.basename(filename)
+        print(filename)
+        clean_filename = '.'.join(filename.split('.')[:-1])
+        print(clean_filename)
+        split_filename = clean_filename.split('_')
+        self.ivorn = '_'.join(split_filename[:-1])
+        self.root = split_filename[-1]
+        self.attrib = {'ivorn': self.ivorn}
+        print(self.ivorn, self.root)
+
+    def __str__(self):
+        return self.root
+
+    def find(self, string):
+        return TestFind(self.root)
 
 
 def test_processor(xml_file):
@@ -893,17 +922,21 @@ def test_processor(xml_file):
         xml = _f.read()
     parsed_xml = parse(xml)
     xml = unparse(parsed_xml)
+    test_root = TestRoot(xml_file, xml)
     gcn_handler = GCNProcessor(
-        xml, archived_xml_dir, output_html_dir, template_html_dir, html_templates_dict, xml_file
+        xml, archived_xml_dir, output_html_dir, template_html_dir, html_templates_dict, test_root
     )
     gcn_handler.gcn_processor()
     if gcn_handler.target_visibility.target_is_observable:
-        post_gcn_alert(gcn_handler.html_save_location, gcn_handler.target_visibility.coord)
+        # post_gcn_alert(gcn_handler.html_save_location, gcn_handler.target_visibility.coord)
+        pass
+    else:
+        print('not observable')
 
 
 if __name__ == '__main__':
-    # test_file = '/Users/jdurbak/PycharmProjects/prime-gcn-monitor/processed_xml/Fermi%23Point_Dir_2023-12-19T22%3A06%3A00.00_000000-0-384_129.xml'
-    # test_processor(test_file)
-    a = TargetVisibilityAtDCT(95.7959, -48.3720, units.degree)
-    print(a.time_observable_minutes)
-    plot_targets(a.coord, a.time_now, 'test', a.dct)
+    test_file = '/Users/jdurbak/PycharmProjects/prime-gcn-monitor/processed_xml/SWIFT%2523BAT_Known_Pos_141.xml'
+    test_processor(test_file)
+    # a = TargetVisibilityAtDCT(95.7959, -48.3720, units.degree)
+    # print(a.time_observable_minutes)
+    # plot_targets(a.coord, a.time_now, 'test', a.dct)
