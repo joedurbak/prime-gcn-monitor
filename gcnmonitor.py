@@ -239,7 +239,7 @@ def plot_targets(target, obstime, file_prefix, observer):
 
 
 def calculate_time_observable_minutes(
-        target_rise_time, target_set_time, night_start_time, night_end_time, location, coords, constraints, time_range
+        location, coords, constraints, time_range
 ):
     ot = observability_table(
         constraints, location, [coords], time_range=time_range, time_grid_resolution=0.05 * units.h
@@ -250,9 +250,10 @@ def calculate_time_observable_minutes(
 
 
 class TargetVisibilityAtDCT:
-    def __init__(self, ra, dec, unit,):
+    def __init__(self, ra, dec, unit, error_radius):
         self.airmass_horizon = airmass_horizon(settings.AIRMASS_LIMIT)
         self.coord = SkyCoord(ra, dec, unit=unit)
+        self.error_radius = error_radius * units.Unit(unit)
         # self.time = Time(utc_time)
         self.time_now = Time(str(dt.utcnow()))
         self.dct = dct_astroplan_loc()
@@ -284,7 +285,6 @@ class TargetVisibilityAtDCT:
         )[0]
         print(self.target_is_observable)
         self.time_observable_minutes = calculate_time_observable_minutes(
-            self.target_rise_time, self.target_set_time, self.twilight_evening, self.twilight_morning,
             self.dct, self.target, constraints, (self.twilight_evening, self.twilight_morning)
         )
         if self.time_observable_minutes < settings.OBSERVABLE_TIME_MINIMUM_MINUTES:
@@ -369,9 +369,11 @@ class HTMLOutput:
         if context['WhereWhen_ObservationLocation_AstroCoords_Position2D_Name1'].lower() == 'ra':
             ra = context['WhereWhen_ObservationLocation_AstroCoords_Position2D_Value2_C1']
             dec = context['WhereWhen_ObservationLocation_AstroCoords_Position2D_Value2_C2']
+            error_radius = context['WhereWhen_ObservationLocation_AstroCoords_Position2D_Error2Radius']
         elif context['WhereWhen_ObservationLocation_AstroCoords_Position2D_Name2'].lower() == 'ra':
             ra = context['WhereWhen_ObservationLocation_AstroCoords_Position2D_Value2_C2']
             dec = context['WhereWhen_ObservationLocation_AstroCoords_Position2D_Value2_C1']
+            error_radius = context['WhereWhen_ObservationLocation_AstroCoords_Position2D_Error2Radius']
         else:
             return format_html(self.container_html, context)
         alt, az = radec_to_altaz(
@@ -382,7 +384,7 @@ class HTMLOutput:
         az = format_decimal_places(az, dec_places)
         context['ALT'], context['AZ'] = (alt, az)
         self.target_visibility = TargetVisibilityAtDCT(
-            ra, dec, context['WhereWhen_ObservationLocation_AstroCoords_Position2D_unit'],
+            ra, dec, context['WhereWhen_ObservationLocation_AstroCoords_Position2D_unit'], error_radius
         )
         try:
             context['TargetIsUp'] = self.target_visibility.target_is_up
@@ -495,7 +497,7 @@ class HTMLOutput:
                 'Description': xml_tag_loader(param, ('Description', )),
                 'Reference': self.references_xml_to_html(xml_tag_loader(param, ('Reference',))),
             }
-            pass
+            pass  # TODO: figure out why I put this here...
             context['DescriptionIcon'], context['DescriptionModal'] = self.icon_modal_html(
                 context['Description'], '{0}ParamModalDescription{1}'.format(param_modal_id_prefix, param_index),
                 'description'
@@ -865,10 +867,40 @@ class GCNProcessor:
 
 
 def filter_notices(gcn_handler):
-    if gcn_handler.target_visibility is not None:
-        if gcn_handler.target_visibility.target_is_observable:
-            return True
-    return False
+    filter_list = [
+        gcn_handler.target_visibility is not None,
+        gcn_handler.target_visibility.target_is_observable,
+        gcn_handler.target_visibility.error_radius < settings.MAX_ERROR_RADIUS
+    ]
+    for flag in settings.FALSE_FLAGS:
+        print('flag', flag)
+        find = gcn_handler.root.find(flag)
+        print('find', find)
+        if find is None:
+            print('{} not found'.format(flag))
+            filter_list.append(True)
+        else:
+            value = find.attrib('@value')
+            print('@value', value)
+            filter_list.append(not value)
+    for flag in settings.TRUE_FLAGS:
+        print('flag', flag)
+        find = gcn_handler.root.find(flag)
+        print('find', find)
+        if find is None:
+            print('{} not found'.format(flag))
+            filter_list.append(True)
+        else:
+            value = find.attrib('@value')
+            print('@value', value)
+            filter_list.append(value)
+    for f in filter_list:
+        if not f:
+            return False
+    # if gcn_handler.target_visibility is not None:
+    #     if gcn_handler.target_visibility.target_is_observable:
+    #         return True
+    return True
 
 
 @gcn.include_notice_types(*notice_types)
@@ -885,12 +917,13 @@ def handler(payload, root):
         xml, archived_xml_dir, output_html_dir, template_html_dir, html_templates_dict, root
     )
     gcn_handler.gcn_processor()
-    if filter_notices(gcn_handler):
-        airmass_plot, sky_plot = plot_targets(
-            gcn_handler.target_visibility.coord, gcn_handler.target_visibility.time_now,
-            gcn_handler.html_save_location, gcn_handler.target_visibility.dct
-        )
-        post_gcn_alert(gcn_handler.html_save_location, gcn_handler.target_visibility.coord, (airmass_plot, sky_plot))
+    if gcn_handler.target_visibility is not None:
+        if filter_notices(gcn_handler):
+            airmass_plot, sky_plot = plot_targets(
+                gcn_handler.target_visibility.coord, gcn_handler.target_visibility.time_now,
+                gcn_handler.html_save_location, gcn_handler.target_visibility.dct
+            )
+            post_gcn_alert(gcn_handler.html_save_location, gcn_handler.target_visibility.coord, (airmass_plot, sky_plot))
 
 
 class TestFind:
@@ -901,14 +934,14 @@ class TestFind:
 class TestRoot:
     def __init__(self, filename, xml):
         filename = os.path.basename(filename)
-        print(filename)
+        # print(filename)
         clean_filename = '.'.join(filename.split('.')[:-1])
-        print(clean_filename)
+        # print(clean_filename)
         split_filename = clean_filename.split('_')
         self.ivorn = '_'.join(split_filename[:-1])
         self.root = split_filename[-1]
         self.attrib = {'ivorn': self.ivorn}
-        print(self.ivorn, self.root)
+        # print(self.ivorn, self.root)
 
     def __str__(self):
         return self.root
@@ -927,15 +960,19 @@ def test_processor(xml_file):
         xml, archived_xml_dir, output_html_dir, template_html_dir, html_templates_dict, test_root
     )
     gcn_handler.gcn_processor()
-    if gcn_handler.target_visibility.target_is_observable:
-        # post_gcn_alert(gcn_handler.html_save_location, gcn_handler.target_visibility.coord)
-        pass
+    if gcn_handler.target_visibility is not None:
+        if filter_notices(gcn_handler):
+            # post_gcn_alert(gcn_handler.html_save_location, gcn_handler.target_visibility.coord)
+            pass
+        else:
+            print('not observable')
     else:
         print('not observable')
 
 
 if __name__ == '__main__':
-    test_file = '/Users/jdurbak/PycharmProjects/prime-gcn-monitor/processed_xml/SWIFT%2523BAT_Known_Pos_141.xml'
+    # test_file = '/Users/jdurbak/PycharmProjects/prime-gcn-monitor/processed_xml/SWIFT%2523BAT_Known_Pos_141.xml'
+    test_file = '/Users/jdurbak/PycharmProjects/prime-gcn-monitor/processed_xml/Fermi%23GBM_Alert_2024-01-04T01%3A12%3A22.10_726023547_1-642_110.xml'
     test_processor(test_file)
     # a = TargetVisibilityAtDCT(95.7959, -48.3720, units.degree)
     # print(a.time_observable_minutes)

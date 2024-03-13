@@ -1,7 +1,9 @@
 import os
 
 import gcn
+import numpy as np
 from pandas import DataFrame
+from astropy import units
 
 AIRMASS_LIMIT = 2.0
 MARKDOWN = True
@@ -13,6 +15,20 @@ TEMPLATE_HTML_DIR = "html_templates"
 LOCATION_NAME = "Sutherland"
 AIRMASS_ORG_LOCATION = 'salt'
 OBSERVABLE_TIME_MINIMUM_MINUTES = 15
+
+_max_tiling_time_s = 60 * 60 * 2
+_tile_time_s = 10 * 10 * 2
+_n_tiles = int(_max_tiling_time_s / _tile_time_s)
+_fov_sq_deg = 1.56
+_max_tile_area = _fov_sq_deg * _n_tiles
+MAX_ERROR_RADIUS = (np.sqrt(_max_tile_area/np.pi)) * units.deg
+print('MAX_ERROR_RADIUS', MAX_ERROR_RADIUS)
+
+FALSE_FLAGS = [
+        "./What/Group/Param[@name='StarTrack_Lost_Lock']",
+        "./What/Group/Param['Def_NOT_a_GRB']"
+]
+TRUE_FLAGS = []
 
 HTML_TEMPLATES_DICT = {
     'astro_coords_html': 'astro_coords.html',
