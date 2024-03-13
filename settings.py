@@ -26,7 +26,7 @@ print('MAX_ERROR_RADIUS', MAX_ERROR_RADIUS)
 
 FALSE_FLAGS = [
         "./What/Group/Param[@name='StarTrack_Lost_Lock']",
-        "./What/Group/Param['Def_NOT_a_GRB']"
+        "./What/Group/Param[@name='Def_NOT_a_GRB']"
 ]
 TRUE_FLAGS = []
 
