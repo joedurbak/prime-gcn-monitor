@@ -15,6 +15,8 @@ TEMPLATE_HTML_DIR = "html_templates"
 LOCATION_NAME = "Sutherland"
 AIRMASS_ORG_LOCATION = 'salt'
 OBSERVABLE_TIME_MINIMUM_MINUTES = 15
+MAX_RA_DEC_OFFSET_ARCMIN = 37
+MIN_RA_DEC_OFFSET_ARCMIN = 4
 
 _max_tiling_time_s = 60 * 60 * 2
 _tile_time_s = 10 * 10 * 2
@@ -234,8 +236,8 @@ _observations = [
     # (filter1, filter2, total_exposure_time_seconds, exposure_time_per_frame)
     ('Open', 'J', 30*60, 20),
     ('Open', 'H', 30*60, 10),
-    ('Open', 'Y', 30*60, 20),
-    ('Z', 'Open', 30*60, 20)
+    # ('Open', 'Y', 30*60, 20),
+    # ('Z', 'Open', 30*60, 20)
 ]
 
 OBSERVATIONS = DataFrame(_observations)
