@@ -359,6 +359,9 @@ class HTMLOutput:
             'WhereWhen_ObservationLocation_AstroCoords_Position2D_Value2_C2': xml_tag_loader(self.xml_dict, (
                 'WhereWhen', 'ObsDataLocation', 'ObservationLocation', 'AstroCoords', 'Position2D', 'Value2', 'C2'
             )),
+            'WhereWhen_ObservationLocation_AstroCoords_Position2D_Error2Radius': xml_tag_loader(self.xml_dict, (
+                'WhereWhen', 'ObsDataLocation', 'ObservationLocation', 'AstroCoords', 'Position2D', 'Error2Radius'
+            )),
             'WhereWhen_ObservationLocation_AstroCoords_coord_system_id': xml_tag_loader(self.xml_dict, (
                 'WhereWhen', 'ObsDataLocation', 'ObservationLocation', 'AstroCoords', '@coord_system_id'
             )),
@@ -880,8 +883,9 @@ def filter_notices(gcn_handler):
             print('{} not found'.format(flag))
             filter_list.append(True)
         else:
-            value = find.attrib('@value')
+            value = find.attrib['value']
             print('@value', value)
+            value = value.lower() == 'true'
             filter_list.append(not value)
     for flag in settings.TRUE_FLAGS:
         print('flag', flag)
@@ -891,15 +895,13 @@ def filter_notices(gcn_handler):
             print('{} not found'.format(flag))
             filter_list.append(True)
         else:
-            value = find.attrib('@value')
+            value = find.attrib['value']
             print('@value', value)
+            value = value.lower() == 'true'
             filter_list.append(value)
     for f in filter_list:
         if not f:
             return False
-    # if gcn_handler.target_visibility is not None:
-    #     if gcn_handler.target_visibility.target_is_observable:
-    #         return True
     return True
 
 
