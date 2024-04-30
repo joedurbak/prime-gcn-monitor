@@ -234,8 +234,8 @@ INCLUDE_ALERT_MESSAGES = (
 
 _observations = [
     # (filter1, filter2, total_exposure_time_seconds, exposure_time_per_frame)
-    ('Open', 'J', 30*60, 20),
-    ('Open', 'H', 30*60, 10),
+    ('Open', 'J', 30*60, 60),
+    ('Open', 'H', 30*60, 30),
     # ('Open', 'Y', 30*60, 20),
     # ('Z', 'Open', 30*60, 20)
 ]

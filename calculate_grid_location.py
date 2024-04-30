@@ -1,5 +1,6 @@
 from random import randint
 import warnings
+from datetime import date
 
 from astropy.coordinates import SkyCoord
 from astropy import units as u
@@ -17,13 +18,18 @@ warnings.filterwarnings('ignore', category=SettingWithCopyWarning)
 # target_coords = SkyCoord(165.4746, 9.9258, unit=u.deg)  # in the gap
 # target_coords = SkyCoord(161.5702, 8.8237, unit=u.deg)  # in the gap
 # target_coords = SkyCoord(157.5978, 4.1621, unit=u.deg)
-target_coords = SkyCoord('06:17:11.7864', '-44:44:39.876', unit=(u.hourangle, u.deg))
+# target_coords = SkyCoord('06:17:11.7864', '-44:44:39.876', unit=(u.hourangle, u.deg))
+# target_coords = SkyCoord(122.3954, -24.3272, unit=u.deg)
+# target_coords = SkyCoord(121.8567, -29.4609, unit=u.deg)
+target_coords = SkyCoord(122.215846, -24.516465, unit=u.deg)
+
 # target_coords = SkyCoord(94.5677, -45.0114, unit=u.deg)
 # 	23h25m54.33s	-55d07m55.20s
 # grid_df = read_csv('PRIME_sq_r1.2deg_packing.tess', sep=' ')
 grid_df = read_csv('obsable_all_sky_grid.csv', sep=',')
 offset_grid_df = read_csv('offset_obsable_all_sky_grid.csv', sep=',')
-output_name = 'GRB240419a.csv'
+# output_name = 'S240422ed_GCN36278_x101.csv'
+output_name = 'S240422ed_GCN36333.csv'
 
 
 def get_chip(ra_offset, dec_offset):
@@ -76,7 +82,7 @@ def calculate_distance_all(target=target_coords, grid=grid_df):
     return index, min_dist, grid
 
 
-def generate_point_source_csv(dataframe):
+def obtain_point_source_grid_df(dataframe):
     new_df = dataframe.copy()
     print(new_df[['distance', 'ra_offsets', 'dec_offsets']].head(10))
     # print(new_df['ra_offsets'] > settings.MIN_RA_DEC_OFFSET_ARCMIN)
@@ -85,18 +91,27 @@ def generate_point_source_csv(dataframe):
     new_df = new_df.loc[(ra_abs > settings.MIN_RA_DEC_OFFSET_ARCMIN) & (ra_abs < settings.MAX_RA_DEC_OFFSET_ARCMIN)]
     new_df = new_df.loc[(dec_abs > settings.MIN_RA_DEC_OFFSET_ARCMIN) & (dec_abs < settings.MAX_RA_DEC_OFFSET_ARCMIN)]
     print(new_df)
-    expected_rows = settings.OBSERVATIONS.shape[0]
     current_rows = new_df.shape[0]
     if current_rows == 0:
         raise ValueError('no on grid location for this object')
+    return new_df
+
+
+def generate_point_source_csv(dataframe):
+    new_df = obtain_point_source_grid_df(dataframe)
+
+    expected_rows = settings.OBSERVATIONS.shape[0]
+    # current_rows = new_df.shape[0]
     new_df = new_df.append([new_df] * expected_rows, ignore_index=True)
     new_df = new_df.iloc[0:settings.OBSERVATIONS.shape[0]]
     new_df = new_df.copy()
-    new_df['Comment1'] = new_df['distance'].values[0]
+    ra_off = new_df['ra_offsets'].values[0]
+    dec_off = new_df['dec_offsets'].values[0]
     chip = new_df['chip'].values[0]
     if chip == 4:
         new_df['ROToffset'] = new_df['ROToffset'].values[0] + 90 * 60 * 60
         chip = 2
+    new_df['Comment1'] = 'ra_off:{:+0.02f},dec_off:{:+0.02f},C{}'.format(ra_off, dec_off, chip)
     new_df['Comment2'] = chip
     new_df['ObjectName'] = new_df['ObjectName'].values[0]
     new_df['ObjectType'] = new_df['ObjectType'].values[0]
@@ -116,6 +131,11 @@ def generate_point_source_csv(dataframe):
 
 
 def generate_observation_csv(target, save_name, grid=grid_df, backup_grid=offset_grid_df, tile_radius=None):
+    message = 'https://airmass.org/chart/obsid:{}/date:{}/object:gcnobject/ra:{:.6f}/dec:{:.6f}'.format(
+        settings.AIRMASS_ORG_LOCATION, date.today().strftime('%Y-%m-%d'),
+        target.fk5.ra.deg, target.fk5.dec.deg
+    )
+    print(message)
     i, dist, new_df = calculate_distance_all(target, grid)
     # new_df.to_csv('PRIME.tess', columns=['ObjectName', 'ra_degrees', 'dec_degrees'], sep=' ', index=False)
     new_df = new_df.sort_values('distance')
