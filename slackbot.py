@@ -9,7 +9,7 @@ from calculate_grid_location import generate_observation_csv
 import settings
 
 
-def post_gcn_alert(markdown_file, coordinates, images=tuple()):
+def post_gcn_alert(markdown_file, coordinates, images=tuple(), error_radius=0):
     slack_token = settings.SLACK['slack_token']
     gcn_channel_id = settings.SLACK['slack_channel']
     message = settings.SLACK['initial_message']
@@ -73,7 +73,11 @@ def post_gcn_alert(markdown_file, coordinates, images=tuple()):
     #     thread_ts=response['ts']
     # )
     csv_file = markdown_file.replace('.md', '.csv')
-    generate_observation_csv(coordinates, csv_file)
+    if error_radius > settings.MIN_TILE_ERROR_RADIUS:
+        tile_radius = error_radius
+    else:
+        tile_radius = None
+    generate_observation_csv(coordinates, csv_file, tile_radius=tile_radius)
     message = settings.SLACK['observation_list_message']
     file_upload = client.files_upload_v2(
         file=csv_file,

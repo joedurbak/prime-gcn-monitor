@@ -89,7 +89,7 @@ def generate_point_source_csv(dataframe):
     current_rows = new_df.shape[0]
     if current_rows == 0:
         raise ValueError('no on grid location for this object')
-    new_df = new_df.append([new_df] * expected_rows, ignore_index=True)
+    new_df = new_df._append([new_df] * expected_rows, ignore_index=True)
     new_df = new_df.iloc[0:settings.OBSERVATIONS.shape[0]]
     new_df = new_df.copy()
     new_df['Comment1'] = new_df['distance'].values[0]

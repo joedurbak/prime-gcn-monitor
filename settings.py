@@ -25,6 +25,7 @@ _fov_sq_deg = 1.56
 _max_tile_area = _fov_sq_deg * _n_tiles
 MAX_ERROR_RADIUS = (np.sqrt(_max_tile_area/np.pi)) * units.deg
 print('MAX_ERROR_RADIUS', MAX_ERROR_RADIUS)
+MIN_TILE_ERROR_RADIUS = 0.5*units.deg
 
 FALSE_FLAGS = [
         "./What/Group/Param[@name='StarTrack_Lost_Lock']",
@@ -172,9 +173,9 @@ INCLUDE_ALERT_MESSAGES = (
     # gcn.notice_types.AGILE_TRANS,
     # gcn.notice_types.AGILE_GRB_POS_TEST,
     gcn.notice_types.FERMI_GBM_ALERT,
-    gcn.notice_types.FERMI_GBM_FLT_POS,
-    gcn.notice_types.FERMI_GBM_GND_POS,
-    gcn.notice_types.FERMI_GBM_LC,
+    # gcn.notice_types.FERMI_GBM_FLT_POS,
+    # gcn.notice_types.FERMI_GBM_GND_POS,
+    # gcn.notice_types.FERMI_GBM_LC,
     # gcn.notice_types.FERMI_GBM_GND_INTERNAL,
     gcn.notice_types.FERMI_GBM_FIN_POS,
     # gcn.notice_types.FERMI_GBM_ALERT_INTERNAL,
@@ -187,8 +188,8 @@ INCLUDE_ALERT_MESSAGES = (
     gcn.notice_types.FERMI_LAT_TRANS,
     # gcn.notice_types.FERMI_LAT_POS_TEST,
     gcn.notice_types.FERMI_LAT_MONITOR,
-    gcn.notice_types.FERMI_SC_SLEW,
-    gcn.notice_types.FERMI_LAT_GND,
+    # gcn.notice_types.FERMI_SC_SLEW,
+    # gcn.notice_types.FERMI_LAT_GND,
     # gcn.notice_types.FERMI_LAT_OFFLINE,
     # gcn.notice_types.FERMI_POINTDIR,
     # gcn.notice_types.SIMBADNED,
@@ -262,8 +263,8 @@ _message += '  - If you have trouble reaching the observer, try calling the obse
 SLACK = {
     'initial_message': "GCN Alert! More info incoming\n\nObservatory weather: https://suthweather.saao.ac.za/",
     'slack_token': os.environ['SLACKTOKEN'],
-    # 'slack_channel': 'C06APCA2H99',  # bot_testing
-    'slack_channel': 'C06A8KNSV0X',  # gcn
+    'slack_channel': 'C06APCA2H99',  # bot_testing
+    # 'slack_channel': 'C06A8KNSV0X',  # gcn
     'observation_list_message': _message
 }
 

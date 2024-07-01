@@ -870,10 +870,12 @@ class GCNProcessor:
 
 
 def filter_notices(gcn_handler):
+    assert isinstance(gcn_handler, GCNProcessor)
     filter_list = [
         gcn_handler.target_visibility is not None,
         gcn_handler.target_visibility.target_is_observable,
-        gcn_handler.target_visibility.error_radius < settings.MAX_ERROR_RADIUS
+        gcn_handler.target_visibility.error_radius < settings.MAX_ERROR_RADIUS,
+        not gcn_handler.target_visibility.coord.fk5.ra == 0 and gcn_handler.target_visibility.coord.fk5.dec == 0
     ]
     for flag in settings.FALSE_FLAGS:
         print('flag', flag)
@@ -925,7 +927,10 @@ def handler(payload, root):
                 gcn_handler.target_visibility.coord, gcn_handler.target_visibility.time_now,
                 gcn_handler.html_save_location, gcn_handler.target_visibility.dct
             )
-            post_gcn_alert(gcn_handler.html_save_location, gcn_handler.target_visibility.coord, (airmass_plot, sky_plot))
+            post_gcn_alert(
+                gcn_handler.html_save_location, gcn_handler.target_visibility.coord, (airmass_plot, sky_plot),
+                gcn_handler.target_visibility.error_radius
+            )
 
 
 class TestFind:
