@@ -236,7 +236,7 @@ INCLUDE_ALERT_MESSAGES = (
 _observations = [
     # (filter1, filter2, total_exposure_time_seconds, exposure_time_per_frame)
     ('Open', 'J', 30*60, 60),
-    ('Open', 'H', 30*60, 30),
+    ('Open', 'H', 30*60, 11.44),
     # ('Open', 'Y', 30*60, 20),
     # ('Z', 'Open', 30*60, 20)
 ]
@@ -262,9 +262,9 @@ _message += '  - If you have trouble reaching the observer, try calling the obse
 
 SLACK = {
     'initial_message': "GCN Alert! More info incoming\n\nObservatory weather: https://suthweather.saao.ac.za/",
-    'slack_token': os.environ['SLACKTOKEN'],
-    'slack_channel': 'C06APCA2H99',  # bot_testing
-    # 'slack_channel': 'C06A8KNSV0X',  # gcn
+    'slack_token': os.environ.get('SLACKTOKEN', 'NA'),
+    # 'slack_channel': 'C06APCA2H99',  # bot_testing
+    'slack_channel': 'C06A8KNSV0X',  # gcn
     'observation_list_message': _message
 }
 

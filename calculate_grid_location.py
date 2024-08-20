@@ -22,8 +22,8 @@ warnings.filterwarnings('ignore', category=SettingWithCopyWarning)
 # target_coords = SkyCoord(122.3954, -24.3272, unit=u.deg)
 # target_coords = SkyCoord(121.8567, -29.4609, unit=u.deg)
 # target_coords = SkyCoord('22:30:38.84', '-39:07:20.06', unit=(u.hourangle, u.deg))
-target_coords = SkyCoord(74.7900, -39.9100, unit=u.deg)
-error_radius = 1
+target_coords = SkyCoord(292.925, -54.412, unit=u.deg)
+error_radius = None
 
 # target_coords = SkyCoord(94.5677, -45.0114, unit=u.deg)
 # 	23h25m54.33s	-55d07m55.20s
@@ -32,7 +32,7 @@ bulge_grid_df = read_csv('bulge_grid.csv', sep=',')
 grid_df = read_csv('obsable_all_sky_grid.csv', sep=',')
 offset_grid_df = read_csv('offset_obsable_all_sky_grid.csv', sep=',')
 # output_name = 'S240422ed_GCN36278_x101.csv'
-output_name = 'GRB240812C.csv'
+output_name = 'EP20240816a.csv'
 # output_name = 'swiftgrb.csv'
 default_rot_offset = 48 * 60 * 60
 
