@@ -875,7 +875,8 @@ def filter_notices(gcn_handler):
         gcn_handler.target_visibility is not None,
         gcn_handler.target_visibility.target_is_observable,
         gcn_handler.target_visibility.error_radius < settings.MAX_ERROR_RADIUS,
-        not gcn_handler.target_visibility.coord.fk5.ra == 0 and gcn_handler.target_visibility.coord.fk5.dec == 0
+        not (int(gcn_handler.target_visibility.coord.fk5.ra.arcmin) == 0 and
+             int(gcn_handler.target_visibility.coord.fk5.dec.arcmin) == 0)
     ]
     for flag in settings.FALSE_FLAGS:
         print('flag', flag)
