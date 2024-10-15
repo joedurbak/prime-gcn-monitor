@@ -1,0 +1,1 @@
+﻿Observer(PI institute),GridType,ObjectType,RA(h:m:s),DEC(d:m:s),"RAoffset("")","DECoffset("")",Filter1,Filter2,DitherType,"DitherRadius("")",DitherPhase(°),DitherTotal,Images,IntegrationTime(s),PIName,TargetName,SpecificTime,Priority,CommentNASA,all_sky_grid,ToO,20:05:24.3096,-68:40:06.456,0,0,Open,J,Random,90,0,30,1,60.06,Durbak,GCN_targ,01:00 - 02:00 01/04/2024,High,chip2

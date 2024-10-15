@@ -1,3 +1,4 @@
+import os.path
 from random import randint
 import warnings
 from datetime import date
@@ -5,6 +6,7 @@ from datetime import date
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 from pandas import read_csv
+from pandas import DataFrame
 from pandas.errors import SettingWithCopyWarning
 import numpy as np
 
@@ -12,29 +14,20 @@ import settings
 
 warnings.filterwarnings('ignore', category=SettingWithCopyWarning)
 
-# target_coords = SkyCoord('08h11m36.81s', "-54d39m25.20s")
-# target_coords = SkyCoord('09h54m05.13s', '-49d36m43.20s')
-# target_coords = SkyCoord('10h51m15.43s', '+05d48m24.69s')
-# target_coords = SkyCoord(165.4746, 9.9258, unit=u.deg)  # in the gap
-# target_coords = SkyCoord(161.5702, 8.8237, unit=u.deg)  # in the gap
-# target_coords = SkyCoord(157.5978, 4.1621, unit=u.deg)
-# target_coords = SkyCoord('06:17:11.7864', '-44:44:39.876', unit=(u.hourangle, u.deg))
-# target_coords = SkyCoord(122.3954, -24.3272, unit=u.deg)
 # target_coords = SkyCoord(121.8567, -29.4609, unit=u.deg)
-# target_coords = SkyCoord('22:30:38.84', '-39:07:20.06', unit=(u.hourangle, u.deg))
-target_coords = SkyCoord(292.925, -54.412, unit=u.deg)
+target_coords = SkyCoord('00:20:37.0344','-89:10:29.244', unit=(u.hourangle, u.deg))
 error_radius = None
 
-# target_coords = SkyCoord(94.5677, -45.0114, unit=u.deg)
-# 	23h25m54.33s	-55d07m55.20s
-# grid_df = read_csv('PRIME_sq_r1.2deg_packing.tess', sep=' ')
 bulge_grid_df = read_csv('bulge_grid.csv', sep=',')
 grid_df = read_csv('obsable_all_sky_grid.csv', sep=',')
 offset_grid_df = read_csv('offset_obsable_all_sky_grid.csv', sep=',')
 # output_name = 'S240422ed_GCN36278_x101.csv'
-output_name = 'EP20240816a.csv'
+output_name = 'test.csv'
 # output_name = 'swiftgrb.csv'
+output_name = os.path.join(settings.OBSLIST_DIR, output_name)
 default_rot_offset = 48 * 60 * 60
+
+default_csv_fields = settings.OBSERVATION_LIST_DEFAULTS.copy()
 
 
 def get_chip(ra_offset, dec_offset):
@@ -102,6 +95,61 @@ def obtain_point_source_grid_df(dataframe):
     return new_df
 
 
+def observation_list_to_submission_format(
+        observation_list_df, grid_type, target_name,
+        object_type=settings.OBSERVATION_LIST_DEFAULTS['ObjectType'],
+        pi_name=settings.OBSERVATION_LIST_DEFAULTS['PIName'],
+        specific_time=settings.OBSERVATION_LIST_DEFAULTS['SpecificTime'],
+        priority=settings.OBSERVATION_LIST_DEFAULTS['Priority']
+):
+    n_rows = observation_list_df.shape[0]
+    columns = {
+        'Observer(PI institute)': observation_list_df['Observer'].to_list(),
+        'GridType': [grid_type for i in range(n_rows)],
+        'ObjectType': [object_type for i in range(n_rows)],
+        'RA(h:m:s)': observation_list_df['RA'].to_list(),
+        'DEC(d:m:s)': observation_list_df['DEC'].to_list(),
+        'RAoffset(")': observation_list_df['RAoffset'].to_list(),
+        'DECoffset(")': observation_list_df['DECoffset'].to_list(),
+        'Filter1': observation_list_df['Filter1'].to_list(),
+        'Filter2': observation_list_df['Filter2'].to_list(),
+        'DitherType': observation_list_df['DitherType'].to_list(),
+        'DitherRadius(")': observation_list_df['DitherRadius'].to_list(),
+        'DitherPhase(°)': observation_list_df['DitherPhase'].to_list(),
+        'DitherTotal': observation_list_df['DitherTotal'].to_list(),
+        'Images': observation_list_df['Images'].to_list(),
+        'IntegrationTime(s)': observation_list_df['IntegrationTime'].to_list(),
+        'PIName': [pi_name for i in range(n_rows)],
+        'TargetName': [target_name for i in range(n_rows)],
+        'SpecificTime': [specific_time for i in range(n_rows)],
+        'Priority': [priority for i in range(n_rows)],
+        'Comment': observation_list_df['Comment1'].to_list()
+    }
+    return DataFrame(columns)
+
+
+def generate_point_source_centered_csv(dataframe, coords):
+    new_df = dataframe.copy()
+    expected_rows = settings.OBSERVATIONS.shape[0]
+    new_df = new_df._append([new_df] * expected_rows, ignore_index=True)
+    new_df['RA'] = coords.fk5.ra
+    new_df['DEC'] = coords.fk5.dec
+    offset = 1125
+    new_df['RAoffset'] = offset
+    new_df['DECoffset'] = offset
+    new_df['Comment1'] = 'ra_off:{:+0.02f}+dec_off:{:+0.02f}+C{}+{}'.format(offset, offset, 3, 'no_grid')
+    print(settings.OBSERVATIONS)
+    new_df['Filter1'][:] = settings.OBSERVATIONS.filter1[:]
+    new_df['Filter2'][:] = settings.OBSERVATIONS.filter2[:]
+    new_df['IntegrationTime'][:] = settings.OBSERVATIONS.exposure_time_per_frame[:]
+    new_df['DitherTotal'][:] = \
+        (settings.OBSERVATIONS.total_exposure_time_seconds / settings.OBSERVATIONS.exposure_time_per_frame)[:]
+    new_df['DitherTotal'] = new_df['DitherTotal'].astype(int)
+    block_ids = ['P{:06d}'.format(randint(0, 999999)) for i in range(0, settings.OBSERVATIONS.shape[0])]
+    new_df['BlockID'][:] = np.asarray(block_ids)[:]
+    return new_df
+
+
 def generate_point_source_csv(dataframe):
     new_df = obtain_point_source_grid_df(dataframe)
 
@@ -116,7 +164,7 @@ def generate_point_source_csv(dataframe):
     if chip == 4:
         new_df['ROToffset'] = new_df['ROToffset'].values[0] + 90 * 60 * 60
         chip = 2
-    new_df['Comment1'] = 'ra_off:{:+0.02f}+dec_off:{:+0.02f}+C{}'.format(ra_off, dec_off, chip)
+    new_df['Comment1'] = 'ra_off:{:+0.02f}+dec_off:{:+0.02f}+C{}+{}'.format(ra_off, dec_off, chip, new_df['ObjectName'].values[0])
     new_df['Comment2'] = chip
     new_df['ObjectName'] = new_df['ObjectName'].values[0]
     new_df['ObjectType'] = new_df['ObjectType'].values[0]
@@ -137,26 +185,34 @@ def generate_point_source_csv(dataframe):
 
 def generate_observation_csv(
         target, save_name, grid=grid_df, backup_grid=offset_grid_df, tile_radius=None,
-        default_rotation=default_rot_offset
+        default_rotation=default_rot_offset, target_name=None
 ):
     message = 'https://airmass.org/chart/obsid:{}/date:{}/object:gcnobject/ra:{:.6f}/dec:{:.6f}/object:bulge/ra:262.116667/dec:-31.020197/object:bulge%202/ra:271.033125/dec:-27.400156/'.format(
         settings.AIRMASS_ORG_LOCATION, date.today().strftime('%Y-%m-%d'),
         target.fk5.ra.deg, target.fk5.dec.deg
     )
+    if target_name is None:
+        target_name = '.'.join(os.path.basename(save_name).split('.')[:-1])
     print(message)
     i, dist, new_df = calculate_distance_all(target, grid)
     # new_df.to_csv('PRIME.tess', columns=['ObjectName', 'ra_degrees', 'dec_degrees'], sep=' ', index=False)
     new_df = new_df.sort_values('distance')
     new_df['ROToffset'] = default_rotation
+    grid_type = 'all_sky_grid'
     if tile_radius is None:
         try:
             new_df = generate_point_source_csv(new_df)
         except ValueError:
             print('source is in the grid gaps, switching to offset grid')
+            grid_type = 'no_grid'
             i, dist, new_df = calculate_distance_all(target, backup_grid)
             new_df = new_df.sort_values('distance')
             new_df['ROToffset'] = default_rotation
-            new_df = generate_point_source_csv(new_df)
+            try:
+                new_df = generate_point_source_csv(new_df)
+            except ValueError:
+                print('source is in the grid gaps, going off grid')
+                new_df = generate_point_source_centered_csv(new_df, target)
     else:
         new_df = new_df.loc[new_df['distance'] < tile_radius*60]
         new_df['Comment1'] = new_df['distance']
@@ -166,8 +222,9 @@ def generate_observation_csv(
     new_df['DitherType'] = 'Random'
     new_df['DitherRadius'] = 90
     new_df['Comment2'] = save_name
-    print(new_df.to_csv(save_name, index=False))
-    print(new_df.to_string())
+    save_df = observation_list_to_submission_format(new_df, grid_type=grid_type, target_name=target_name)
+    print(save_df.to_csv(save_name, index=False))
+    print(save_df.to_string())
     return save_name
 
 

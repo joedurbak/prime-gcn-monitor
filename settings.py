@@ -5,18 +5,44 @@ import numpy as np
 from pandas import DataFrame
 from astropy import units
 
+BASEDIR = os.path.dirname(__file__)
+print(BASEDIR)
 AIRMASS_LIMIT = 2.0
 MARKDOWN = True
 DCT_LOC_PICKLE = 'salt_loc.pickle'
 DCT_ASTROPLAN_LOC_PICKLE = 'salt_astroplan_loc.pickle'
-ARCHIVED_XML_DIR = "processed_xml"
-OUTPUT_HTML_DIR = "output_html"
-TEMPLATE_HTML_DIR = "html_templates"
+ARCHIVED_XML_DIR = os.path.join(BASEDIR, "processed_xml")
+OUTPUT_HTML_DIR = os.path.join(BASEDIR, "output_html")
+TEMPLATE_HTML_DIR = os.path.join(BASEDIR, "html_templates")
+OBSLIST_DIR = os.path.join(BASEDIR, "observation_lists")
 LOCATION_NAME = "Sutherland"
 AIRMASS_ORG_LOCATION = 'salt'
 OBSERVABLE_TIME_MINIMUM_MINUTES = 15
 MAX_RA_DEC_OFFSET_ARCMIN = 37
 MIN_RA_DEC_OFFSET_ARCMIN = 4
+
+OBSERVATION_LIST_DEFAULTS = {
+    'Observer(PI institute)': 'NASA',
+    'GridType': 'all_sky_grid',
+    'ObjectType': 'ToO',
+    'RA(h:m:s)': '00:00:00.0',
+    'DEC(d:m:s)': '+00:00:00.0',
+    'RAoffset(")': 0,
+    'DECoffset(")': 0,
+    'Filter1': 'Open',
+    'Filter2': 'J',
+    'DitherType': 'Random',
+    'DitherRadius(")': 90,
+    'DitherPhase(°)': 0,
+    'DitherTotal': 30,
+    'Images': 1,
+    'IntegrationTime(s)': 60.06,
+    'PIName': 'NASA_ToO_team',
+    'TargetName': 'GCN_alert',
+    'SpecificTime': '',
+    'Priority': 'High',
+    'Comment': ''
+}
 
 _max_tiling_time_s = 60 * 60 * 2
 _tile_time_s = 10 * 10 * 2
@@ -249,8 +275,13 @@ _total_telescope_time = _total_observation_time * 2
 _message = 'Observation list contains the following exposures:\n\n'
 _message += '```\n' + str(OBSERVATIONS.to_markdown()) + '\n```\n'
 _message += '*Some notes*\n'
-_message += '  - To observe this target, send the observation list csv to the obs-request channel'
-_message += ' on the PRIME discord\n'
+
+site = 'https://docs.google.com/forms/d/e/1FAIpQLSeXhoZNJcR8_4zFdiFDUNi-Q2kV9oZuTB-PrJUWwrXBZCSgFQ/viewform?usp=sharing'
+_message += '  - To observe this target, submit observation list csv to the PRIME proposal submission site: {}\n'.format(
+    site
+)
+_message += '  - Next, send a message to the telescope operator in obs-request channel'
+_message += ' on the PRIME discord to ensure they are aware of the sumbitted ToO\n'
 _message += '  - Total telescope time, {} minutes, is ~2x total exposure time for all filters, {} minutes.\n'.format(
     int(_total_telescope_time/60), int(_total_observation_time/60)
 )
