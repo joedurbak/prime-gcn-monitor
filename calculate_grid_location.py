@@ -43,16 +43,28 @@ def get_chip(ra_offset, dec_offset):
         return 4
 
 
-def calculate_distance(ra, dec, target=target_coords):
+def calculate_distance(ra, dec, target=target_coords, lazy=False):
+    """
+
+    :param ra:
+    :param dec:
+    :param target:
+    :param lazy: add the absolute values of ra and dec offsets to save computation time.
+        Useful if only trying to get a rough measure
+    :return:
+    """
     # grid_coords = SkyCoord(ra*units.deg, dec*units.deg)
     grid_coords = SkyCoord(ra, dec, unit=('hourangle', 'degree'))
-    sep = target.separation(grid_coords)
     sep_ra = target.ra.arcmin - grid_coords.ra.arcmin
     sep_dec = target.dec.arcmin - grid_coords.dec.arcmin
-    return sep.arcmin, sep_ra, sep_dec, grid_coords.ra.degree, grid_coords.dec.degree, get_chip(sep_ra, sep_dec)
+    if not lazy:
+        sep = target.separation(grid_coords).arcmin
+    else:
+        sep = abs(sep_ra) + abs(sep_dec)
+    return sep, sep_ra, sep_dec, grid_coords.ra.degree, grid_coords.dec.degree, get_chip(sep_ra, sep_dec)
 
 
-def calculate_distance_all(target=target_coords, grid=grid_df):
+def calculate_distance_all(target=target_coords, grid=grid_df, lazy=False):
     distances = []
     ra_offsets = []
     dec_offsets = []
@@ -60,7 +72,7 @@ def calculate_distance_all(target=target_coords, grid=grid_df):
     dec_degrees = []
     chips = []
     for ra, dec in zip(grid['RA'], grid['DEC']):
-        distance, ra_off, dec_off, ra_d, dec_d, chip = calculate_distance(ra, dec, target)
+        distance, ra_off, dec_off, ra_d, dec_d, chip = calculate_distance(ra, dec, target, lazy=lazy)
         distances.append(distance)
         ra_offsets.append(ra_off)
         dec_offsets.append(dec_off)
@@ -131,9 +143,10 @@ def observation_list_to_submission_format(
 def generate_point_source_centered_csv(dataframe, coords):
     new_df = dataframe.copy()
     expected_rows = settings.OBSERVATIONS.shape[0]
-    new_df = new_df._append([new_df] * expected_rows, ignore_index=True)
-    new_df['RA'] = coords.fk5.ra
-    new_df['DEC'] = coords.fk5.dec
+    new_df = new_df.iloc[:expected_rows]
+    # new_df = new_df._append([new_df] * expected_rows, ignore_index=True)
+    new_df['RA'] = coords.fk5.ra.to_string(unit=u.hour, sep=':')
+    new_df['DEC'] = coords.fk5.dec.to_string(unit=u.degree, sep=':')
     offset = 1125
     new_df['RAoffset'] = offset
     new_df['DECoffset'] = offset
@@ -194,7 +207,10 @@ def generate_observation_csv(
     if target_name is None:
         target_name = '.'.join(os.path.basename(save_name).split('.')[:-1])
     print(message)
-    i, dist, new_df = calculate_distance_all(target, grid)
+    lazy = False
+    if tile_radius is None:
+        lazy = True
+    i, dist, new_df = calculate_distance_all(target, grid, lazy=lazy)
     # new_df.to_csv('PRIME.tess', columns=['ObjectName', 'ra_degrees', 'dec_degrees'], sep=' ', index=False)
     new_df = new_df.sort_values('distance')
     new_df['ROToffset'] = default_rotation
@@ -212,7 +228,7 @@ def generate_observation_csv(
                 new_df = generate_point_source_csv(new_df)
             except ValueError:
                 print('source is in the grid gaps, going off grid')
-                new_df = generate_point_source_centered_csv(new_df, target)
+                new_df = generate_point_source_centered_csv(grid, target)
     else:
         new_df = new_df.loc[new_df['distance'] < tile_radius*60]
         new_df['Comment1'] = new_df['distance']
