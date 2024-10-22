@@ -1,4 +1,4 @@
-#!/usr python
+#!/usr/bin/env python
 
 from gcnmonitor import handler
 import gcn

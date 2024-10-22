@@ -14,15 +14,15 @@ import settings
 
 warnings.filterwarnings('ignore', category=SettingWithCopyWarning)
 
-# target_coords = SkyCoord(121.8567, -29.4609, unit=u.deg)
-target_coords = SkyCoord('00:20:37.0344','-89:10:29.244', unit=(u.hourangle, u.deg))
+target_coords = SkyCoord(28.852, 5.957, unit=u.deg)
+# target_coords = SkyCoord('00:30:37.0344','-89:20:29.244', unit=(u.hourangle, u.deg))
 error_radius = None
 
 bulge_grid_df = read_csv('bulge_grid.csv', sep=',')
 grid_df = read_csv('obsable_all_sky_grid.csv', sep=',')
 offset_grid_df = read_csv('offset_obsable_all_sky_grid.csv', sep=',')
 # output_name = 'S240422ed_GCN36278_x101.csv'
-output_name = 'test.csv'
+output_name = 'EP241021a.csv'
 # output_name = 'swiftgrb.csv'
 output_name = os.path.join(settings.OBSLIST_DIR, output_name)
 default_rot_offset = 48 * 60 * 60
@@ -174,10 +174,12 @@ def generate_point_source_csv(dataframe):
     ra_off = new_df['ra_offsets'].values[0]
     dec_off = new_df['dec_offsets'].values[0]
     chip = new_df['chip'].values[0]
+    rotated = ''
     if chip == 4:
         new_df['ROToffset'] = new_df['ROToffset'].values[0] + 90 * 60 * 60
         chip = 2
-    new_df['Comment1'] = 'ra_off:{:+0.02f}+dec_off:{:+0.02f}+C{}+{}'.format(ra_off, dec_off, chip, new_df['ObjectName'].values[0])
+        rotated = '+rotated90'
+    new_df['Comment1'] = 'ra_off:{:+0.02f}+dec_off:{:+0.02f}+C{}+{}{}'.format(ra_off, dec_off, chip, new_df['ObjectName'].values[0], rotated)
     new_df['Comment2'] = chip
     new_df['ObjectName'] = new_df['ObjectName'].values[0]
     new_df['ObjectType'] = new_df['ObjectType'].values[0]
@@ -241,6 +243,7 @@ def generate_observation_csv(
     save_df = observation_list_to_submission_format(new_df, grid_type=grid_type, target_name=target_name)
     print(save_df.to_csv(save_name, index=False))
     print(save_df.to_string())
+    print("Submit {} observation file to https://docs.google.com/forms/d/e/1FAIpQLSeXhoZNJcR8_4zFdiFDUNi-Q2kV9oZuTB-PrJUWwrXBZCSgFQ/viewform".format(save_name))
     return save_name
 
 
