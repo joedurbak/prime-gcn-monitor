@@ -9,6 +9,7 @@ from pandas import read_csv
 from pandas import DataFrame
 from pandas.errors import SettingWithCopyWarning
 import numpy as np
+from argparse import ArgumentParser
 
 import settings
 
@@ -204,7 +205,7 @@ def generate_point_source_csv(dataframe, point_source_radius=3/60):
 
 def generate_observation_csv(
         target, save_name, grid=grid_df, backup_grid=offset_grid_df, tile_radius=None,
-        default_rotation=default_rot_offset, target_name=None, point_source_radius=3/60
+        default_rotation=default_rot_offset, target_name=None, point_source_radius=3/60, force_centered=False
 ):
     message = 'https://airmass.org/chart/obsid:{}/date:{}/object:gcnobject/ra:{:.6f}/dec:{:.6f}/object:bulge/ra:262.116667/dec:-31.020197/object:bulge%202/ra:271.033125/dec:-27.400156/'.format(
         settings.AIRMASS_ORG_LOCATION, date.today().strftime('%Y-%m-%d'),
@@ -221,7 +222,9 @@ def generate_observation_csv(
     new_df = new_df.sort_values('distance')
     new_df['ROToffset'] = default_rotation
     grid_type = 'all_sky_grid'
-    if tile_radius is None:
+    if force_centered:
+        new_df = generate_point_source_centered_csv(grid, target)
+    elif tile_radius is None:
         try:
             new_df = generate_point_source_csv(new_df, point_source_radius=point_source_radius)
         except ValueError:
@@ -251,5 +254,54 @@ def generate_observation_csv(
     return save_name
 
 
+def generate_observation_csv_ra_dec(
+    target_ra, target_dec, save_name, grid=grid_df, backup_grid=offset_grid_df, tile_radius=None,
+    default_rotation=default_rot_offset, target_name=None, point_source_radius=3/60, force_centered=False
+):
+    try:
+        target_ra = float(target_ra)
+        target_dec = float(target_dec)
+        coords = SkyCoord(target_ra, target_dec, unit=u.deg)
+    except ValueError:
+        coords = SkyCoord(target_ra, target_dec, unit=(u.hourangle, u.deg))
+    generate_observation_csv(
+        coords, save_name, grid, backup_grid, tile_radius, default_rotation, target_name, point_source_radius,
+        force_centered
+    )
+
+
+
+def main():
+    parser = ArgumentParser()
+
+    parser.add_argument('ra', type=str, help='[float or str] should either be in degrees (fff.fff) or hour angle (HHH:MM:SS.SSS or HHHhMMmSS.SSSs)')
+    parser.add_argument('dec', type=str, help='[float or str] should either be in degrees (fff.fff) or dms (+DD:MM:SS.SSS or +DDdMMmSS.SSSs)')
+    parser.add_argument(
+        'filename', type=str, help="[str], output filename",
+    )
+    parser.add_argument(
+        '-t', '--tile', type=float, help='[float] optional, radius for tiling',
+        default=None
+    )
+    parser.add_argument(
+        '-e', '--error_radius', type=float, help='[float] optional, error radius for well localized point source',
+        default=3/60
+    )
+    parser.add_argument(
+        '-n', '--name', type=str, help='[str] optional, name to use for target if it does not match filename'
+        , default=None
+    )
+    parser.add_argument(
+        '-c', '--center', action='store_true', help='force well localized point source to center of chip 3',
+        default=False
+    )
+    args = parser.parse_args()
+    generate_observation_csv_ra_dec(
+        args.ra, args.dec, args.filename, tile_radius=args.tile, target_name=args.name,
+        point_source_radius=args.error_radius, force_centered=args.center
+    )
+
+
 if __name__ == '__main__':
-    generate_observation_csv(target_coords, output_name, grid=grid_df, tile_radius=error_radius, point_source_radius=3)
+    main()
+    # generate_observation_csv(target_coords, output_name, grid=grid_df, tile_radius=error_radius, point_source_radius=3)
