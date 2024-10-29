@@ -14,7 +14,8 @@ import settings
 
 warnings.filterwarnings('ignore', category=SettingWithCopyWarning)
 
-target_coords = SkyCoord(28.852, 5.957, unit=u.deg)
+# target_coords = SkyCoord(28.852, 5.957, unit=u.deg)
+target_coords = SkyCoord(325.327, 5.086, unit=u.deg)
 # target_coords = SkyCoord('00:30:37.0344','-89:20:29.244', unit=(u.hourangle, u.deg))
 error_radius = None
 
@@ -22,7 +23,7 @@ bulge_grid_df = read_csv('bulge_grid.csv', sep=',')
 grid_df = read_csv('obsable_all_sky_grid.csv', sep=',')
 offset_grid_df = read_csv('offset_obsable_all_sky_grid.csv', sep=',')
 # output_name = 'S240422ed_GCN36278_x101.csv'
-output_name = 'EP241021a.csv'
+output_name = 'GRB241029a.csv'
 # output_name = 'swiftgrb.csv'
 output_name = os.path.join(settings.OBSLIST_DIR, output_name)
 default_rot_offset = 48 * 60 * 60
@@ -92,14 +93,16 @@ def calculate_distance_all(target=target_coords, grid=grid_df, lazy=False):
     return index, min_dist, grid
 
 
-def obtain_point_source_grid_df(dataframe):
+def obtain_point_source_grid_df(dataframe, point_source_radius=3/60, dither_radius=90/60):
     new_df = dataframe.copy()
     print(new_df[['distance', 'ra_offsets', 'dec_offsets']].head(10))
     # print(new_df['ra_offsets'] > settings.MIN_RA_DEC_OFFSET_ARCMIN)
     ra_abs = new_df['ra_offsets'].abs()
     dec_abs = new_df['dec_offsets'].abs()
-    new_df = new_df.loc[(ra_abs > settings.MIN_RA_DEC_OFFSET_ARCMIN) & (ra_abs < settings.MAX_RA_DEC_OFFSET_ARCMIN)]
-    new_df = new_df.loc[(dec_abs > settings.MIN_RA_DEC_OFFSET_ARCMIN) & (dec_abs < settings.MAX_RA_DEC_OFFSET_ARCMIN)]
+    min_offset = settings.MIN_RA_DEC_OFFSET_ARCMIN + point_source_radius + dither_radius
+    max_offset = settings.MAX_RA_DEC_OFFSET_ARCMIN - point_source_radius - dither_radius
+    new_df = new_df.loc[(ra_abs > min_offset) & (ra_abs < max_offset)]
+    new_df = new_df.loc[(dec_abs > min_offset) & (dec_abs < max_offset)]
     print(new_df)
     current_rows = new_df.shape[0]
     if current_rows == 0:
@@ -123,6 +126,7 @@ def observation_list_to_submission_format(
         'DEC(d:m:s)': observation_list_df['DEC'].to_list(),
         'RAoffset(")': observation_list_df['RAoffset'].to_list(),
         'DECoffset(")': observation_list_df['DECoffset'].to_list(),
+        'ROToffset(°)': ((observation_list_df['ROToffset'] - default_rot_offset) /3600).to_list(),
         'Filter1': observation_list_df['Filter1'].to_list(),
         'Filter2': observation_list_df['Filter2'].to_list(),
         'DitherType': observation_list_df['DitherType'].to_list(),
@@ -163,8 +167,8 @@ def generate_point_source_centered_csv(dataframe, coords):
     return new_df
 
 
-def generate_point_source_csv(dataframe):
-    new_df = obtain_point_source_grid_df(dataframe)
+def generate_point_source_csv(dataframe, point_source_radius=3/60):
+    new_df = obtain_point_source_grid_df(dataframe, point_source_radius=point_source_radius)
 
     expected_rows = settings.OBSERVATIONS.shape[0]
     # current_rows = new_df.shape[0]
@@ -200,7 +204,7 @@ def generate_point_source_csv(dataframe):
 
 def generate_observation_csv(
         target, save_name, grid=grid_df, backup_grid=offset_grid_df, tile_radius=None,
-        default_rotation=default_rot_offset, target_name=None
+        default_rotation=default_rot_offset, target_name=None, point_source_radius=3/60
 ):
     message = 'https://airmass.org/chart/obsid:{}/date:{}/object:gcnobject/ra:{:.6f}/dec:{:.6f}/object:bulge/ra:262.116667/dec:-31.020197/object:bulge%202/ra:271.033125/dec:-27.400156/'.format(
         settings.AIRMASS_ORG_LOCATION, date.today().strftime('%Y-%m-%d'),
@@ -219,7 +223,7 @@ def generate_observation_csv(
     grid_type = 'all_sky_grid'
     if tile_radius is None:
         try:
-            new_df = generate_point_source_csv(new_df)
+            new_df = generate_point_source_csv(new_df, point_source_radius=point_source_radius)
         except ValueError:
             print('source is in the grid gaps, switching to offset grid')
             grid_type = 'no_grid'
@@ -227,7 +231,7 @@ def generate_observation_csv(
             new_df = new_df.sort_values('distance')
             new_df['ROToffset'] = default_rotation
             try:
-                new_df = generate_point_source_csv(new_df)
+                new_df = generate_point_source_csv(new_df, point_source_radius=point_source_radius)
             except ValueError:
                 print('source is in the grid gaps, going off grid')
                 new_df = generate_point_source_centered_csv(grid, target)
@@ -248,4 +252,4 @@ def generate_observation_csv(
 
 
 if __name__ == '__main__':
-    generate_observation_csv(target_coords, output_name, grid=grid_df, tile_radius=error_radius)
+    generate_observation_csv(target_coords, output_name, grid=grid_df, tile_radius=error_radius, point_source_radius=3)
