@@ -101,7 +101,9 @@ def obtain_point_source_grid_df(dataframe, point_source_radius=3/60, dither_radi
     ra_abs = new_df['ra_offsets'].abs()
     dec_abs = new_df['dec_offsets'].abs()
     min_offset = settings.MIN_RA_DEC_OFFSET_ARCMIN + point_source_radius + dither_radius
-    max_offset = settings.MAX_RA_DEC_OFFSET_ARCMIN - point_source_radius - dither_radius
+    max_offset = settings.MAX_RA_DEC_OFFSET_ARCMIN - (point_source_radius + dither_radius)
+    print('min_offset', min_offset)
+    print('max_offset', max_offset)
     new_df = new_df.loc[(ra_abs > min_offset) & (ra_abs < max_offset)]
     new_df = new_df.loc[(dec_abs > min_offset) & (dec_abs < max_offset)]
     print(new_df)
@@ -119,10 +121,15 @@ def observation_list_to_submission_format(
         priority=settings.OBSERVATION_LIST_DEFAULTS['Priority']
 ):
     n_rows = observation_list_df.shape[0]
+    if grid_type == 'no_grid':
+        field_number = ['' for i in range(n_rows)]
+    else:
+        field_number = observation_list_df['ObjectName']
     columns = {
         'Observer(PI institute)': observation_list_df['Observer'].to_list(),
         'GridType': [grid_type for i in range(n_rows)],
         'ObjectType': [object_type for i in range(n_rows)],
+        'FieldNumber': field_number,
         'RA(h:m:s)': observation_list_df['RA'].to_list(),
         'DEC(d:m:s)': observation_list_df['DEC'].to_list(),
         'RAoffset(")': observation_list_df['RAoffset'].to_list(),
@@ -211,6 +218,8 @@ def generate_observation_csv(
         settings.AIRMASS_ORG_LOCATION, date.today().strftime('%Y-%m-%d'),
         target.fk5.ra.deg, target.fk5.dec.deg
     )
+    if tile_radius is not None and force_centered:
+        raise ValueError('The tile_radius and force_centered algorithms are incompatible. tile_radius should be None, and/or force_centered should be False.')
     if target_name is None:
         target_name = '.'.join(os.path.basename(save_name).split('.')[:-1])
     print(message)
@@ -274,7 +283,7 @@ def generate_observation_csv_ra_dec(
 def main():
     parser = ArgumentParser()
 
-    parser.add_argument('ra', type=str, help='[float or str] should either be in degrees (fff.fff) or hour angle (HHH:MM:SS.SSS or HHHhMMmSS.SSSs)')
+    parser.add_argument('ra', type=str, help='[float or str] should either be in degrees (fff.fff) or hour angle (HH:MM:SS.SSS or HHhMMmSS.SSSs)')
     parser.add_argument('dec', type=str, help='[float or str] should either be in degrees (fff.fff) or dms (+DD:MM:SS.SSS or +DDdMMmSS.SSSs)')
     parser.add_argument(
         'filename', type=str, help="[str], output filename",
