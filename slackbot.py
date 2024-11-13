@@ -1,3 +1,4 @@
+import os.path
 from time import sleep
 import ssl
 from datetime import date
@@ -73,6 +74,9 @@ def post_gcn_alert(markdown_file, coordinates, images=tuple(), error_radius=0):
     #     thread_ts=response['ts']
     # )
     csv_file = markdown_file.replace('.md', '.csv')
+    csv_directory = os.path.dirname(csv_file)
+    csv_file_name = 'NASA_ToO_{}_'.format(date.today().strftime('%Y-%m-%d')) + os.path.basename(csv_file)
+    csv_file = os.path.join(csv_directory, csv_file_name)
     if error_radius > settings.MIN_TILE_ERROR_RADIUS:
         tile_radius = error_radius
     else:

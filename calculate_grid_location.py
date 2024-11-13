@@ -31,6 +31,13 @@ default_rot_offset = 48 * 60 * 60
 
 default_csv_fields = settings.OBSERVATION_LIST_DEFAULTS.copy()
 
+rotation_angle_dict = {
+    1: 0,
+    2: 90,
+    3: 270,
+    4: 180
+}
+
 
 def get_chip(ra_offset, dec_offset):
     ra_sign = ra_offset >= 0
@@ -161,8 +168,8 @@ def generate_point_source_centered_csv(dataframe, coords):
     new_df['DEC'] = coords.fk5.dec.to_string(unit=u.degree, sep=':')
     offset = 1125
     new_df['RAoffset'] = offset
-    new_df['DECoffset'] = offset
-    new_df['Comment1'] = 'ra_off:{:+0.02f}+dec_off:{:+0.02f}+C{}+{}'.format(offset, offset, 3, 'no_grid')
+    new_df['DECoffset'] = 0 - offset
+    new_df['Comment1'] = 'ra_off:{:+0.02f}+dec_off:{:+0.02f}+C{}+{}'.format(offset, 0 - offset, 1, 'no_grid')
     print(settings.OBSERVATIONS)
     new_df['Filter1'][:] = settings.OBSERVATIONS.filter1[:]
     new_df['Filter2'][:] = settings.OBSERVATIONS.filter2[:]
@@ -183,14 +190,16 @@ def generate_point_source_csv(dataframe, point_source_radius=3/60):
     new_df = new_df._append([new_df] * expected_rows, ignore_index=True)
     new_df = new_df.iloc[0:settings.OBSERVATIONS.shape[0]]
     new_df = new_df.copy()
-    ra_off = new_df['ra_offsets'].values[0]
-    dec_off = new_df['dec_offsets'].values[0]
-    chip = new_df['chip'].values[0]
-    rotated = ''
-    if chip == 4:
-        new_df['ROToffset'] = new_df['ROToffset'].values[0] + 90 * 60 * 60
-        chip = 2
-        rotated = '+rotated90'
+    ra_off = new_df['ra_offsets'].values[0]  # setting comment info
+    dec_off = new_df['dec_offsets'].values[0]  # setting comment info
+    chip = new_df['chip'].values[0]  # getting current chip
+    rotated = '+rotated{}'.format(rotation_angle_dict[chip])  # setting comment info
+    new_df['ROToffset'] = new_df['ROToffset'].values[0] + rotation_angle_dict[chip] * 60 * 60  # rotating onto chip 1
+    chip = 1
+    # if chip == 4:
+    #     new_df['ROToffset'] = new_df['ROToffset'].values[0] + 90 * 60 * 60
+    #     chip = 2
+    #     rotated = '+rotated90'
     new_df['Comment1'] = 'ra_off:{:+0.02f}+dec_off:{:+0.02f}+C{}+{}{}'.format(ra_off, dec_off, chip, new_df['ObjectName'].values[0], rotated)
     new_df['Comment2'] = chip
     new_df['ObjectName'] = new_df['ObjectName'].values[0]
