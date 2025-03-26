@@ -16,15 +16,15 @@ import settings
 warnings.filterwarnings('ignore', category=SettingWithCopyWarning)
 
 # target_coords = SkyCoord(28.852, 5.957, unit=u.deg)
-target_coords = SkyCoord(325.327, 5.086, unit=u.deg)
-# target_coords = SkyCoord('00:30:37.0344','-89:20:29.244', unit=(u.hourangle, u.deg))
+# target_coords = SkyCoord(13', -10.73, unit=u.deg)
+target_coords = SkyCoord('13:25:12.16','-05:16:55.1', unit=(u.hourangle, u.deg))
 error_radius = None
 
 bulge_grid_df = read_csv('bulge_grid.csv', sep=',')
 grid_df = read_csv('obsable_all_sky_grid.csv', sep=',')
 offset_grid_df = read_csv('offset_obsable_all_sky_grid.csv', sep=',')
 # output_name = 'S240422ed_GCN36278_x101.csv'
-output_name = 'GRB241029a.csv'
+output_name = 'GRB250314A.csv'
 # output_name = 'swiftgrb.csv'
 output_name = os.path.join(settings.OBSLIST_DIR, output_name)
 default_rot_offset = 48 * 60 * 60
@@ -37,6 +37,29 @@ rotation_angle_dict = {
     3: 270,
     4: 180
 }
+
+
+def calc_extend_ratio(width, dec):
+  a = 2*np.pi*((90-np.abs(dec))/360)
+  R = (np.arccos(np.sin(np.deg2rad(width))))/(np.arccos(np.sin(np.deg2rad(width))*np.sin(a)**2+np.cos(a)**2))
+  return R
+
+def calc_dec_correction(width_extended, dec):
+  dec_correction = (1-np.cos(np.deg2rad(width_extended)))*np.sin(np.deg2rad(dec))
+  return dec_correction
+
+
+def get_chip_df(df):
+    ra_sign = df['ra_offsets'] >= 0
+    dec_sign = df['dec_offsets'] >= 0
+    if not ra_sign and dec_sign:
+        return 1
+    elif ra_sign and dec_sign:
+        return 2
+    elif not ra_sign and not dec_sign:
+        return 3
+    else:
+        return 4
 
 
 def get_chip(ra_offset, dec_offset):
@@ -74,30 +97,39 @@ def calculate_distance(ra, dec, target=target_coords, lazy=False):
 
 
 def calculate_distance_all(target=target_coords, grid=grid_df, lazy=False):
-    distances = []
-    ra_offsets = []
-    dec_offsets = []
-    ra_degrees = []
-    dec_degrees = []
-    chips = []
-    for ra, dec in zip(grid['RA'], grid['DEC']):
-        distance, ra_off, dec_off, ra_d, dec_d, chip = calculate_distance(ra, dec, target, lazy=lazy)
-        distances.append(distance)
-        ra_offsets.append(ra_off)
-        dec_offsets.append(dec_off)
-        ra_degrees.append(ra_d)
-        dec_degrees.append(dec_d)
-        chips.append(chip)
-    d_arr = np.asarray(distances)
-    min_dist = np.min(d_arr)
-    index = np.where(d_arr == min_dist)
+    # distances = []
+    # ra_offsets = []
+    # dec_offsets = []
+    # ra_degrees = []
+    # dec_degrees = []
+    # chips = []
+    # for ra, dec in zip(grid['RA'], grid['DEC']):
+    #     distance, ra_off, dec_off, ra_d, dec_d, chip = calculate_distance(ra, dec, target, lazy=lazy)
+    #     distances.append(distance)
+    #     ra_offsets.append(ra_off)
+    #     dec_offsets.append(dec_off)
+    #     ra_degrees.append(ra_d)
+    #     dec_degrees.append(dec_d)
+    #     chips.append(chip)
+    # d_arr = np.asarray(distances)
+    # min_dist = np.min(d_arr)
+    # index = np.where(d_arr == min_dist)
     # print(d_arr)
-    grid['distance'] = d_arr
-    grid['ra_offsets'] = np.asarray(ra_offsets)
-    grid['dec_offsets'] = np.asarray(dec_offsets)
-    grid['ra_degrees'] = np.asarray(ra_degrees)
-    grid['dec_degrees'] = np.asarray(dec_degrees)
-    grid['chip'] = np.asarray(chips)
+    grid_coords = SkyCoord(grid['RA'], grid['DEC'], unit=('hourangle', 'degree'))
+    grid['distance'] = target.separation(grid_coords).arcmin
+    min_dist = np.min(grid['distance'])
+    index = np.where(grid['distance'] == min_dist)
+    dra, ddec = target.spherical_offsets_to(grid_coords)
+    grid['ra_offsets'], grid['dec_offsets'] = dra.arcmin, ddec.arcmin
+    grid['ra_degrees'] = grid_coords.ra.degree
+    grid['dec_degrees'] = grid_coords.dec.degree
+    grid['chip'] = grid.apply(get_chip_df, axis=1)
+    # grid['distance'] = d_arr
+    # grid['ra_offsets'] = np.asarray(ra_offsets)
+    # grid['dec_offsets'] = np.asarray(dec_offsets)
+    # grid['ra_degrees'] = np.asarray(ra_degrees)
+    # grid['dec_degrees'] = np.asarray(dec_degrees)
+    # grid['chip'] = np.asarray(chips)
     return index, min_dist, grid
 
 
@@ -321,5 +353,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
-    # generate_observation_csv(target_coords, output_name, grid=grid_df, tile_radius=error_radius, point_source_radius=3)
+    # main()
+    generate_observation_csv(target_coords, output_name, grid=grid_df, tile_radius=error_radius, point_source_radius=3/60)
