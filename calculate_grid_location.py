@@ -17,14 +17,14 @@ warnings.filterwarnings('ignore', category=SettingWithCopyWarning)
 
 # target_coords = SkyCoord(28.852, 5.957, unit=u.deg)
 # target_coords = SkyCoord(13', -10.73, unit=u.deg)
-target_coords = SkyCoord('13:25:12.16','-05:16:55.1', unit=(u.hourangle, u.deg))
+target_coords = SkyCoord('08:39:40','-39:16:05', unit=(u.hourangle, u.deg))
 error_radius = None
 
 bulge_grid_df = read_csv('bulge_grid.csv', sep=',')
 grid_df = read_csv('obsable_all_sky_grid.csv', sep=',')
 offset_grid_df = read_csv('offset_obsable_all_sky_grid.csv', sep=',')
 # output_name = 'S240422ed_GCN36278_x101.csv'
-output_name = 'GRB250314A.csv'
+output_name = 'Durbak_20250602_GRB250603A.csv'
 # output_name = 'swiftgrb.csv'
 output_name = os.path.join(settings.OBSLIST_DIR, output_name)
 default_rot_offset = 48 * 60 * 60
@@ -38,6 +38,12 @@ rotation_angle_dict = {
     4: 180
 }
 
+chip_dict = {
+    '00': 3,
+    '01': 1,
+    '10': 4,
+    '11': 2,
+}
 
 def calc_extend_ratio(width, dec):
   a = 2*np.pi*((90-np.abs(dec))/360)
@@ -52,69 +58,46 @@ def calc_dec_correction(width_extended, dec):
 def get_chip_df(df):
     ra_sign = df['ra_offsets'] >= 0
     dec_sign = df['dec_offsets'] >= 0
-    if not ra_sign and dec_sign:
-        return 1
-    elif ra_sign and dec_sign:
-        return 2
-    elif not ra_sign and not dec_sign:
-        return 3
-    else:
-        return 4
+    signs = ra_sign.astype(int).astype(str) + dec_sign.astype(int).astype(str)
+    chips = signs.map(chip_dict)
+    return chips
 
 
-def get_chip(ra_offset, dec_offset):
-    ra_sign = ra_offset >= 0
-    dec_sign = dec_offset >= 0
-    if not ra_sign and dec_sign:
-        return 1
-    elif ra_sign and dec_sign:
-        return 2
-    elif not ra_sign and not dec_sign:
-        return 3
-    else:
-        return 4
+# def get_chip(df, ra_offset, dec_offset):
+#     ra_sign = ra_offset >= 0
+#     dec_sign = dec_offset >= 0
+#     if not ra_sign and dec_sign:
+#         return 1
+#     elif ra_sign and dec_sign:
+#         return 2
+#     elif not ra_sign and not dec_sign:
+#         return 3
+#     else:
+#         return 4
 
 
-def calculate_distance(ra, dec, target=target_coords, lazy=False):
-    """
-
-    :param ra:
-    :param dec:
-    :param target:
-    :param lazy: add the absolute values of ra and dec offsets to save computation time.
-        Useful if only trying to get a rough measure
-    :return:
-    """
-    # grid_coords = SkyCoord(ra*units.deg, dec*units.deg)
-    grid_coords = SkyCoord(ra, dec, unit=('hourangle', 'degree'))
-    sep_ra = target.ra.arcmin - grid_coords.ra.arcmin
-    sep_dec = target.dec.arcmin - grid_coords.dec.arcmin
-    if not lazy:
-        sep = target.separation(grid_coords).arcmin
-    else:
-        sep = abs(sep_ra) + abs(sep_dec)
-    return sep, sep_ra, sep_dec, grid_coords.ra.degree, grid_coords.dec.degree, get_chip(sep_ra, sep_dec)
+# def calculate_distance(ra, dec, target=target_coords, lazy=False):
+#     """
+#
+#     :param ra:
+#     :param dec:
+#     :param target:
+#     :param lazy: add the absolute values of ra and dec offsets to save computation time.
+#         Useful if only trying to get a rough measure
+#     :return:
+#     """
+#     # grid_coords = SkyCoord(ra*units.deg, dec*units.deg)
+#     grid_coords = SkyCoord(ra, dec, unit=('hourangle', 'degree'))
+#     sep_ra = target.ra.arcmin - grid_coords.ra.arcmin
+#     sep_dec = target.dec.arcmin - grid_coords.dec.arcmin
+#     if not lazy:
+#         sep = target.separation(grid_coords).arcmin
+#     else:
+#         sep = abs(sep_ra) + abs(sep_dec)
+#     return sep, sep_ra, sep_dec, grid_coords.ra.degree, grid_coords.dec.degree, get_chip(sep_ra, sep_dec)
 
 
 def calculate_distance_all(target=target_coords, grid=grid_df, lazy=False):
-    # distances = []
-    # ra_offsets = []
-    # dec_offsets = []
-    # ra_degrees = []
-    # dec_degrees = []
-    # chips = []
-    # for ra, dec in zip(grid['RA'], grid['DEC']):
-    #     distance, ra_off, dec_off, ra_d, dec_d, chip = calculate_distance(ra, dec, target, lazy=lazy)
-    #     distances.append(distance)
-    #     ra_offsets.append(ra_off)
-    #     dec_offsets.append(dec_off)
-    #     ra_degrees.append(ra_d)
-    #     dec_degrees.append(dec_d)
-    #     chips.append(chip)
-    # d_arr = np.asarray(distances)
-    # min_dist = np.min(d_arr)
-    # index = np.where(d_arr == min_dist)
-    # print(d_arr)
     grid_coords = SkyCoord(grid['RA'], grid['DEC'], unit=('hourangle', 'degree'))
     grid['distance'] = target.separation(grid_coords).arcmin
     min_dist = np.min(grid['distance'])
@@ -123,19 +106,14 @@ def calculate_distance_all(target=target_coords, grid=grid_df, lazy=False):
     grid['ra_offsets'], grid['dec_offsets'] = dra.arcmin, ddec.arcmin
     grid['ra_degrees'] = grid_coords.ra.degree
     grid['dec_degrees'] = grid_coords.dec.degree
-    grid['chip'] = grid.apply(get_chip_df, axis=1)
-    # grid['distance'] = d_arr
-    # grid['ra_offsets'] = np.asarray(ra_offsets)
-    # grid['dec_offsets'] = np.asarray(dec_offsets)
-    # grid['ra_degrees'] = np.asarray(ra_degrees)
-    # grid['dec_degrees'] = np.asarray(dec_degrees)
-    # grid['chip'] = np.asarray(chips)
+    grid['chip'] = get_chip_df(grid)
+    # grid['chip'] = grid.apply(get_chip, axis=1, args=('ra_offsets', 'dec_offsets'))
     return index, min_dist, grid
 
 
 def obtain_point_source_grid_df(dataframe, point_source_radius=3/60, dither_radius=90/60):
     new_df = dataframe.copy()
-    print(new_df[['distance', 'ra_offsets', 'dec_offsets']].head(10))
+    print(new_df[['distance', 'ra_offsets', 'dec_offsets', 'chip']].head(10))
     # print(new_df['ra_offsets'] > settings.MIN_RA_DEC_OFFSET_ARCMIN)
     ra_abs = new_df['ra_offsets'].abs()
     dec_abs = new_df['dec_offsets'].abs()
@@ -168,7 +146,7 @@ def observation_list_to_submission_format(
         'Observer(PI institute)': observation_list_df['Observer'].to_list(),
         'GridType': [grid_type for i in range(n_rows)],
         'ObjectType': [object_type for i in range(n_rows)],
-        'FieldNumber': field_number,
+        'FieldName': field_number,
         'RA(h:m:s)': observation_list_df['RA'].to_list(),
         'DEC(d:m:s)': observation_list_df['DEC'].to_list(),
         'RAoffset(")': observation_list_df['RAoffset'].to_list(),
